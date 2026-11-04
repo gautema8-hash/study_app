@@ -45,3 +45,4 @@ secrets/
 # 系统
 .DS_Store
 Thumbs.db
+backend/src/main/resources/application-local.yml
