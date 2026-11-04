@@ -220,6 +220,13 @@ public class QuizController {
         int updated = jt.update("UPDATE quiz_task SET score=?, result=?, abnormal_flag=?, submitted_at=NOW() WHERE id=? AND result=0",
             score, result, abnormalFast >= 3 ? 1 : 0, req.taskId());
         if (updated == 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "任务已判分（并发幂等保护）");
+        if (result == 3) { // T-06 判废 → 双写风控事件与家长告警（FR-13/14）
+            jt.update("INSERT INTO risk_event(family_id, profile_id, type, detail) VALUES(?,?, 'T-06', ?)",
+                c.familyId(), profileId, "{\"reason\":\"abnormalFast\",\"count\":" + abnormalFast + ",\"taskId\":" + req.taskId() + "}");
+            jt.update("INSERT INTO alarm(family_id, type, title, content) VALUES(?,?,?,?)",
+                c.familyId(), "RISK_T-06", "异常快答判废",
+                "本次作答检测到异常快答 " + abnormalFast + " 题，已判废（任务" + req.taskId() + "）");
+        }
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("score", score);
