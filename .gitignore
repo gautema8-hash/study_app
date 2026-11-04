@@ -1,0 +1,47 @@
+# 本地工作数据（勿提交）
+.workbuddy/
+
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins*
+**/.packages
+**/pubspec.lock
+**/.idea/
+**/*.iml
+**/.gradle/
+**/local.properties
+**/key.properties
+**/*.jks
+**/*.keystore
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/ephemeral/
+
+# 后端 Java
+backend/target/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.log
+hs_err_pid*
+
+# Web (admin-web)
+admin-web/node_modules/
+admin-web/dist/
+admin-web/.umi*/
+npm-debug.log*
+yarn-error.log
+
+# 环境与密钥（安全红线：任何密钥不入库）
+.env
+.env.*
+*.pem
+*.p12
+secrets/
+
+# 系统
+.DS_Store
+Thumbs.db

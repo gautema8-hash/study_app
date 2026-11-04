@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习解锁 · 产品需求文档 v1.0</title>
+<style>
+  :root{
+    --bg:#f6f4ef; --surface:#ffffff; --ink:#1c1c1a; --muted:#6d6b64;
+    --line:#e3ded3; --accent:#1f6b58; --accent-2:#2e8a71; --accent-soft:#e9f2ee;
+    --amber:#9a6416; --amber-soft:#fbf0dd; --danger:#9c3b32; --danger-soft:#fbebe8;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font-size:15px; line-height:1.75;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{display:flex; align-items:flex-start}
+  nav.toc{
+    position:sticky; top:0; width:248px; height:100vh; overflow-y:auto; padding:34px 22px 48px;
+    border-right:1px solid var(--line); background:#fbfaf6; flex:0 0 248px;
+  }
+  nav.toc .brand{font-size:12px; letter-spacing:.14em; color:var(--accent); text-transform:uppercase; font-weight:700}
+  nav.toc .t{font-size:20px; font-weight:700; margin:4px 0 22px; letter-spacing:.02em}
+  nav.toc a{display:block; padding:5px 0; color:var(--muted); text-decoration:none; font-size:13px; border-left:2px solid transparent; padding-left:10px}
+  nav.toc a:hover{color:var(--accent); border-left-color:var(--accent-2)}
+  nav.toc a.sub{padding-left:24px; font-size:12.5px; color:#8b8880}
+  main{flex:1; min-width:0; max-width:1060px; padding:46px 56px 110px}
+  .hero{border-bottom:1px solid var(--line); padding-bottom:30px; margin-bottom:38px}
+  .kicker{font-size:12px; letter-spacing:.16em; color:var(--accent); font-weight:700; text-transform:uppercase}
+  h1{font-size:42px; line-height:1.2; margin:10px 0 14px; letter-spacing:-.01em}
+  .lede{font-size:16.5px; color:#46443f; max-width:760px; margin:0 0 20px}
+  .metas{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{font-size:12px; padding:4px 11px; border-radius:999px; background:#eeebe4; color:#5c5a54}
+  .chip.g{background:var(--accent-soft); color:var(--accent)}
+  h2{font-size:24px; margin:52px 0 16px; padding-top:14px; border-top:1px solid var(--line); letter-spacing:-.01em}
+  h2 .idx{color:var(--accent-2); font-size:13px; font-weight:700; letter-spacing:.1em; display:block; margin-bottom:4px}
+  h3{font-size:18px; margin:30px 0 10px; color:#232320}
+  h4{font-size:15px; margin:20px 0 8px; color:#3a3833}
+  p{margin:8px 0 12px; color:#33322e}
+  ul,ol{margin:8px 0 14px; padding-left:20px; color:#33322e}
+  li{margin:4px 0}
+  table{width:100%; border-collapse:collapse; margin:14px 0 20px; font-size:13.5px; line-height:1.6; background:var(--surface)}
+  th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top}
+  th{background:#f2efe8; font-weight:600; color:#3b3934; white-space:nowrap}
+  td.num{white-space:nowrap; font-variant-numeric:tabular-nums}
+  tbody tr:nth-child(even){background:#fbfaf7}
+  .tag{display:inline-block; font-size:11.5px; padding:1px 7px; border-radius:5px; background:#ece9e1; color:#5d5a53; font-weight:600; white-space:nowrap}
+  .tag.p0{background:#e4f1ec; color:#1f6b58}
+  .tag.tbd{background:#fbf0dd; color:#9a6416}
+  .note{border-left:3px solid var(--amber); background:var(--amber-soft); padding:10px 14px; border-radius:0 8px 8px 0; font-size:13.5px; margin:14px 0}
+  .callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:12px 16px; border-radius:0 8px 8px 0; font-size:14px; margin:16px 0}
+  .callout strong{color:var(--accent)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px}
+  .card h4{margin:0 0 6px; font-size:14px; color:var(--accent)}
+  .card p{font-size:13.5px; margin:0; color:#4b4943}
+  .flow{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin:18px 0 8px}
+  .flow .step{flex:1 1 150px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 13px; position:relative; min-width:150px}
+  .flow .step b{display:block; font-size:12px; color:var(--accent); letter-spacing:.06em; margin-bottom:4px}
+  .flow .step span{font-size:13px; color:#3d3b36; line-height:1.55; display:block}
+  .flow .arrow{align-self:center; color:#b8b3a7; font-size:16px; flex:0 0 auto}
+  .layers{display:grid; gap:8px; margin:18px 0}
+  .layer{display:grid; grid-template-columns:150px 1fr; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+  .layer .lbl{background:#f2efe8; padding:12px 14px; font-size:12.5px; font-weight:700; color:var(--accent); display:flex; align-items:center}
+  .layer .body{padding:12px 14px; font-size:13.5px; color:#3d3b36}
+  .demo{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin:20px 0 28px}
+  .demo .dhead{display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:6px}
+  .demo .dhead b{font-size:13px; color:var(--accent); letter-spacing:.06em}
+  .demo .dhead span{font-size:12px; color:var(--muted)}
+  .demo .dnote{font-size:12.5px; color:var(--muted); margin:0 0 16px}
+  .phone{
+    width:340px; height:612px; margin:0 auto; background:#fbfbf8; border:1px solid #d8d3c8;
+    border-radius:24px; box-shadow:0 12px 32px rgba(40,38,30,.10); overflow:hidden;
+    display:flex; flex-direction:column; position:relative;
+  }
+  .pbar{display:flex; justify-content:space-between; padding:9px 18px 5px; font-size:11px; color:#6f6d66; background:#fbfbf8}
+  .pbody{flex:1; overflow-y:auto; padding:8px 18px 18px}
+  .pbody::-webkit-scrollbar{width:4px}
+  .pbody::-webkit-scrollbar-thumb{background:#d6d1c6; border-radius:4px}
+  .btn{border:0; border-radius:10px; padding:10px 16px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit}
+  .btn.primary{background:var(--accent); color:#fff}
+  .btn.primary:hover{background:var(--accent-2)}
+  .btn.ghost{background:#efede7; color:#3f3d37}
+  .btn.ghost:hover{background:#e7e3da}
+  .btn.sm{padding:6px 12px; font-size:12px}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .link{background:none; border:0; color:var(--accent); font-size:12px; cursor:pointer; padding:0; text-decoration:underline; font-family:inherit}
+  .q-head{display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#6d6b64; padding:6px 0 10px; border-bottom:1px solid #eae7df}
+  .q-timer{font-weight:700; color:#b06a1c; font-variant-numeric:tabular-nums}
+  .q-meta{font-size:11.5px; color:#8a877f; margin:10px 0 6px; display:flex; gap:6px; flex-wrap:wrap}
+  .q-stem{font-size:15px; font-weight:600; line-height:1.6; margin:6px 0 14px; color:#232320}
+  .q-opt{display:block; width:100%; text-align:left; background:#fff; border:1px solid #ddd8cd; border-radius:10px; padding:10px 12px; margin:0 0 8px; font-size:13.5px; cursor:pointer; font-family:inherit; color:#2f2d29}
+  .q-opt:hover{border-color:var(--accent-2)}
+  .q-opt.sel{background:var(--accent-soft); border-color:var(--accent); color:#144c3d; font-weight:600}
+  .q-foot{display:flex; gap:8px; margin-top:14px}
+  .q-foot .btn{flex:1; padding:9px 8px; font-size:12.5px}
+  .q-warn{font-size:12px; color:var(--danger); background:var(--danger-soft); padding:7px 10px; border-radius:8px; margin-top:10px; display:none}
+  .result-score{font-size:44px; font-weight:800; letter-spacing:-.02em; margin:4px 0 0; line-height:1.1}
+  .result-score small{font-size:14px; font-weight:500; color:var(--muted)}
+  .result-pass{color:var(--accent)}
+  .result-fail{color:var(--danger)}
+  .kv{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0}
+  .kv div{background:#f6f4ee; border-radius:9px; padding:9px 11px; font-size:12px; color:#55524b}
+  .kv div b{display:block; font-size:15px; color:#232320; margin-top:2px}
+  .wrong{background:#fdf6f4; border:1px solid #f0ddd7; border-radius:10px; padding:10px 12px; margin:8px 0; font-size:12px; color:#5a3a33; line-height:1.6}
+  .wrong b{color:#8c3b31}
+  .demo-controls{display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; margin:6px 0 16px}
+  .field label{display:block; font-size:12.5px; color:#5c5a53; margin-bottom:5px; display:flex; justify-content:space-between}
+  .field label b{color:var(--accent); font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%; accent-color:var(--accent); height:22px}
+  .preview{background:#f6f4ee; border-radius:10px; padding:14px; font-size:13px; color:#3e3c36; line-height:1.8}
+  .preview .big{font-size:17px; font-weight:700; color:var(--accent)}
+  .warnline{color:var(--danger); font-size:12.5px; margin-top:6px}
+  .filters{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px}
+  .fchip{font-size:12px; padding:5px 11px; border-radius:999px; border:1px solid #d9d4c9; background:#fff; color:#54524b; cursor:pointer; font-family:inherit}
+  .fchip.on{background:var(--accent); border-color:var(--accent); color:#fff}
+  .bank{width:100%; font-size:12.5px}
+  .bank th{font-size:11.5px; padding:7px 8px; white-space:normal}
+  .bank td{padding:7px 8px}
+  .streak{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:10px 0 4px}
+  .streak .d{aspect-ratio:1/1; border-radius:7px; background:#eeece5; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; color:#8a877f}
+  .streak .d.on{background:#cfe6dd; color:#1f6b58; font-weight:700}
+  .streak .d.today{outline:2px solid var(--accent); outline-offset:-2px}
+  .badges{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0}
+  .badge{background:#f6f4ee; border-radius:10px; padding:8px 4px; text-align:center; font-size:10.5px; color:#7d7a72; line-height:1.4}
+  .badge .ico{font-size:18px; display:block; margin-bottom:2px; filter:grayscale(1); opacity:.5}
+  .badge.on{background:#e9f2ee; color:#1f6b58; font-weight:600}
+  .badge.on .ico{filter:none; opacity:1}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-top:10px}
+  footer{margin-top:60px; padding-top:22px; border-top:1px solid var(--line); font-size:12px; color:var(--muted)}
+  @media (max-width:980px){
+    .wrap{display:block}
+    nav.toc{position:static; width:auto; height:auto; border-right:0; border-bottom:1px solid var(--line); flex:initial; padding:22px 20px}
+    main{padding:30px 20px 80px; max-width:none}
+    h1{font-size:32px}
+    .demo-controls{grid-template-columns:1fr}
+    .grid2{grid-template-columns:1fr}
+  }
+  @media print{
+    nav.toc{display:none} main{padding:0; max-width:none}
+    .demo,.card,.layer,table{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc">
+    <div class="brand">PRD · v1.2</div>
+    <div class="t">学习解锁</div>
+    <a href="#s1">1 背景与目标</a>
+    <a href="#s2">2 产品契约与角色</a>
+    <a href="#s3">3 范围</a>
+    <a href="#s4">4 对象与状态</a>
+    <a href="#s5">5 核心流程</a>
+    <a href="#s6">6 功能架构</a>
+    <a href="#s7">7 功能需求</a>
+    <a class="sub" href="#fr01">FR-01 家庭与设备配对</a>
+    <a class="sub" href="#fr02">FR-02 题库管理</a>
+    <a class="sub" href="#fr03">FR-03 策略配置</a>
+    <a class="sub" href="#fr04">FR-04 智能选题</a>
+    <a class="sub" href="#fr05">FR-05 答题与解锁</a>
+    <a class="sub" href="#fr06">FR-06 会话与受限模式</a>
+    <a class="sub" href="#fr07">FR-07 防绕过与校验</a>
+    <a class="sub" href="#fr08">FR-08 激励体系</a>
+    <a class="sub" href="#fr09">FR-09 记录与报告</a>
+    <a class="sub" href="#fr10">FR-10 通知与告警</a>
+    <a class="sub" href="#fr11">FR-11 微信登录与家长账号</a>
+    <a class="sub" href="#fr12">FR-12 会员权益与套餐</a>
+    <a class="sub" href="#fr13">FR-13 支付与订单</a>
+    <a class="sub" href="#fr14">FR-14 激励视频免费时长</a>
+    <a class="sub" href="#fr15">FR-15 统一 App 与身份选择</a>
+    <a href="#s8">8 页面结构与信息架构</a>
+    <a href="#s9">9 关键逻辑设计</a>
+    <a href="#s10">10 共享规则与合规</a>
+    <a href="#s11">11 待确认问题</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="kicker">Product Requirements Document</div>
+      <h1>学习解锁</h1>
+      <p class="lede">一款面向 18 岁以下学生的手机使用前置验证产品。同一个 App、同一套账号体系，启动时选择“我是家长”或“我是学生”；学生每次使用受限手机功能前，需完成一组由家长配置、系统按水平匹配的题目，达到分数门槛后方可获得本次使用时长。</p>
+      <div class="metas">
+        <span class="chip g">版本 v1.2 · 待评审</span>
+        <span class="chip">单一 App · 家长 / 学生双身份</span>
+        <span class="chip">Android 与 iOS 均可作为孩子或父母</span>
+        <span class="chip">家长身份：微信登录 · 微信支付 / 支付宝</span>
+        <span class="chip">文档日期 2026-11-04</span>
+      </div>
+    </header>
+
+    <h2 id="s1"><span class="idx">01</span>背景与目标</h2>
+
+    <h3>1.1 观察到的问题</h3>
+    <ul>
+      <li>手机娱乐的即时反馈远强于学习反馈，家长口头约定的“先写完作业再用手机”依赖人工监督，执行不稳定，容易演变为亲子冲突。</li>
+      <li>现有家长管控产品以“限时、禁用、远程锁定”为主，只回答“能用多久”，不回答“先学后玩”；规则被学生关闭权限、修改系统时间、卸载应用后即失效，家长失去信任后弃用。</li>
+      <li>管控在学生侧普遍被感知为惩罚，缺少“完成任务—获得反馈—积累成果”的正向循环，学生没有持续配合的动机。</li>
+    </ul>
+
+    <h3>1.2 产品回应</h3>
+    <p>把“使用手机”定义为需要通过一次学习验证才能获得的权利，并把验证过程做成家长可配置、系统可校验、学生可感知成果的闭环：家长定义题量、时长与门槛；系统按学生水平组卷；学生达标后获得本次使用时长；全过程留痕，异常尝试被拦截并告知家长。</p>
+
+    <h3>1.3 期望的可观察结果</h3>
+    <ul>
+      <li>学生每次进入受限使用前，完成一次答题并看到自己的得分与门槛对比结果。</li>
+      <li>家长修改一次策略后，下一次解锁任务按新策略执行，且家长端可核对生效结果。</li>
+      <li>每一次绕过尝试在家长端产生一条可读的记录，并按等级触发对应处置。</li>
+      <li>学生可在激励中心看到自己的积分、连续打卡天数与已获成就，数据来自服务端记录而非本地展示。</li>
+      <li>家长可在会员中心完成一次购买，并在 5 秒内看到权益到期时间更新、家庭管控状态恢复。</li>
+    </ul>
+    <p class="legend"><span><span class="tag tbd">假设</span> 未经用户确认但为继续设计所需的取值</span><span><span class="tag tbd">待定</span> 需业务或合规确认后才能决定的决策</span></p>
+
+    <h2 id="s2"><span class="idx">02</span>产品契约与角色</h2>
+
+    <table>
+      <thead><tr><th style="width:150px">契约项</th><th>定义</th></tr></thead>
+      <tbody>
+        <tr><td>主要用户</td><td>学生，18 岁以下；产品主力人群为 13–16 岁初中生 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>配置与付费决策方</td><td>家长或法定监护人，负责创建家庭、维护题库与策略、处理异常</td></tr>
+        <tr><td>触发时机</td><td>学生点亮屏幕并尝试进入桌面或打开受限应用；或学生在允许时段内主动发起“使用手机”</td></tr>
+        <tr><td>核心任务</td><td>在家长设定的题量、答题时长与分数门槛内完成一次答题</td></tr>
+        <tr><td>完成条件</td><td>本次得分 ≥ 门槛，获得本次使用时长，且结果页与家长端记录同时可见</td></tr>
+        <tr><td>共享对象</td><td>解锁任务：一次从发起到获得或未获得使用时长的完整记录，包含当次策略快照与逐题作答</td></tr>
+        <tr><td>信任前提</td><td>学生侧规则透明、难度适配、有恢复路径；家长侧规则不可被学生单方面绕过，数据不越界</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.1 角色</h3>
+    <p>产品只有一个安装包。身份不是两个独立应用，而是账号在家庭与设备上的角色：同一台设备同一时间只有一个身份，同一账号可在不同设备分别作为家长或学生使用。后文的“家长端 / 学生端”均指同一 App 内对应身份的界面视图。</p>
+    <table>
+      <thead><tr><th style="width:130px">角色</th><th>职责</th><th>进入方式</th></tr></thead>
+      <tbody>
+        <tr><td>学生</td><td>发起解锁、答题、查看结果与激励、在受限模式下使用白名单功能</td><td>同一 App · 选择“我是学生”或已绑定设备直接进入</td></tr>
+        <tr><td>主家长</td><td>创建家庭、绑定设备、维护题库与策略、处理告警、临时授权、解绑、购买会员</td><td>同一 App · 选择“我是家长”并微信登录</td></tr>
+        <tr><td>协同家长</td><td>可维护题库、查看记录、审批兑换；不可修改设备安全设置与解绑 <span class="tag tbd">P1</span></td><td>同一 App · 家长身份 + 家庭邀请</td></tr>
+        <tr><td>系统</td><td>组卷、判分、签发通过凭证、计时、异常分级、积分与打卡计算、权益判定</td><td>服务端 + 学生端守护</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.2 权限矩阵</h3>
+    <table>
+      <thead><tr><th style="width:210px">能力</th><th>学生身份</th><th>主家长</th><th>协同家长（P1）</th></tr></thead>
+      <tbody>
+        <tr><td>查看题库内容</td><td>否（仅本次题目与结果页解析）</td><td>是</td><td>是</td></tr>
+        <tr><td>新增 / 编辑 / 导入题目</td><td>否</td><td>是</td><td>是</td></tr>
+        <tr><td>查看与修改解锁策略</td><td>仅查看摘要</td><td>是</td><td>仅查看</td></tr>
+        <tr><td>查看解锁与答题记录</td><td>仅本人</td><td>是</td><td>是</td></tr>
+        <tr><td>发放鼓励积分</td><td>否</td><td>是（每日上限 20）</td><td>否</td></tr>
+        <tr><td>审批积分兑换</td><td>否</td><td>是</td><td>是</td></tr>
+        <tr><td>临时授权使用</td><td>否</td><td>是（每日 3 次）</td><td>否</td></tr>
+        <tr><td>绑定 / 解绑设备、修改安全设置</td><td>否</td><td>是（需二次验证）</td><td>否</td></tr>
+        <tr><td>购买会员、查看订单与权益</td><td>否（不可见价格与购买入口）</td><td>是</td><td>仅查看</td></tr>
+        <tr><td>观看激励视频领取权益</td><td>否</td><td>是</td><td>否</td></tr>
+        <tr><td>申请退款 / 注销账号</td><td>否</td><td>是</td><td>否</td></tr>
+      </tbody>
+    </table>
+    <p>表格中的“学生”指设备当前处于学生身份。已绑定学生身份的设备不提供切换到家长身份的入口；家长身份需微信登录并通过家庭归属校验（见 FR-15）。</p>
+
+    <h2 id="s3"><span class="idx">03</span>范围</h2>
+
+    <h3>3.1 P0：最小完整旅程</h3>
+    <p>入口：安装同一 App → 启动页选择身份 → 家长选择“我是家长”并微信登录、创建家庭（自动获得 3 天试用）→ 绑定学生设备 → 孩子在学生设备上选择“我是学生”并输入配对码 → 家长配置策略与题库 → 学生发起使用、答题 → 达标获得时长或进入恢复路径 → 家长在记录中看到结果；试用到期前家长开通会员或观看激励视频维持权益。</p>
+    <table>
+      <thead><tr><th style="width:90px">模块</th><th>P0 包含</th><th>完成证据</th></tr></thead>
+      <tbody>
+        <tr><td>配对</td><td>家庭创建、学生档案（含年级）、配对码、权限引导、设备解绑</td><td>家长身份显示“已绑定”，学生身份出现锁屏答题入口</td></tr>
+        <tr><td>题库</td><td>题目增删改查、科目/年级/难度分类、发布与归档、批量导入与校验</td><td>题目状态由草稿变为已发布，可被组卷选中</td></tr>
+        <tr><td>策略</td><td>题量、答题时长、分数门槛、授予时长、重试与冷却、允许时段、每日上限、科目组合、白名单</td><td>保存后下一次解锁按新参数执行，学生端摘要同步更新</td></tr>
+        <tr><td>组卷</td><td>按年级、科目、难度比例与近期去重组卷，支持自动适配</td><td>任务记录中可见难度分布与题目清单</td></tr>
+        <tr><td>答题解锁</td><td>锁屏入口、答题、倒计时、交卷、判分、结果页、重试</td><td>结果页显示得分、门槛与授予时长，家长端出现记录</td></tr>
+        <tr><td>受限模式</td><td>使用会话计时、到期锁定、学习模式白名单、家长临时授权</td><td>使用时长达标后自动回到锁屏页</td></tr>
+        <tr><td>防绕过</td><td>权限巡检、时间可信、进程守护、设备绑定、异常分级与告警</td><td>模拟异常后家长端出现对应等级记录</td></tr>
+        <tr><td>激励</td><td>积分、成就、连续打卡、兑换（需家长审批）</td><td>结果页与激励中心数值一致，家长端可核对明细</td></tr>
+        <tr><td>记录</td><td>任务明细、周报、题库健康提示</td><td>家长可查看最近 30 天明细与周报</td></tr>
+        <tr><td>通知</td><td>使用到期、异常告警、兑换申请、周报</td><td>关键告警不可被家长关闭</td></tr>
+        <tr><td>账号</td><td>单 App 内选择家长 / 学生身份、微信一键登录、绑定手机号、账号找回、注销</td><td>同一 App 可分别进入两种身份，家长登录后可直接进入家庭</td></tr>
+        <tr><td>商业化</td><td>3 天试用、月/年/永久会员、激励视频换 1 天、微信/支付宝支付、订单与退款</td><td>会员中心显示权益类型与到期时间，支付成功后权益立即生效</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3.2 P1（本期不做，但架构需预留）</h3>
+    <ul>
+      <li>多家长协同、多学生档案、多设备管理与换机迁移。</li>
+      <li>错题本、复习任务、补签卡；“学习 20 分钟后补考”的软性恢复路径。</li>
+      <li>判断题与多选、填空题型；听说类题型；按知识点掌握度组卷。</li>
+      <li>家长自定义奖励商品、班级/教师题库、桌面小组件。</li>
+      <li>数据导出与更长时间跨度的学习报告。</li>
+      <li>发票与对公支付、优惠券与限时活动价、多孩家庭套餐。</li>
+    </ul>
+
+    <h3>3.3 明确不做</h3>
+    <ul>
+      <li>社交、排行榜、内容商城与付费课程。</li>
+      <li>开屏、插屏、信息流等展示型广告；激励视频仅出现在家长端，学生端不出现任何广告与购买入口。</li>
+      <li>读取学生聊天、短信、相册、通话记录或任意应用内容。</li>
+      <li>与学校成绩系统对接、代替家长做教育评价。</li>
+    </ul>
+
+    <h3>3.4 商业化边界</h3>
+    <table>
+      <thead><tr><th style="width:150px">项目</th><th>决定</th></tr></thead>
+      <tbody>
+        <tr><td>付费主体</td><td>仅家长身份可购买；同一 App 的学生身份无支付入口、无广告、无价格展示</td></tr>
+        <tr><td>权益维度</td><td>按家庭计费，覆盖该家庭下已绑定的全部学生设备，不按设备单独收费</td></tr>
+        <tr><td>付费墙位置</td><td>“启用强制管控”“学生端答题解锁”“新增记录与告警”需要有效权益；题库与策略的编辑、预览、历史记录在无权益时仍可查看</td></tr>
+        <tr><td>免费路径</td><td>新用户 3 天试用；试用期间与试用结束后均可观看家长端激励视频，每次获得 1 天权益，可连续观看、不限制累计天数</td></tr>
+        <tr><td>到期处理</td><td>付费到期后先进入 7 天宽限期（管控继续），宽限期结束仍无权益则停止管控并保留数据，避免未付费状态下继续限制学生手机</td></tr>
+        <tr><td>身份与付费</td><td>仅家长身份可购买与查看价格；学生身份在同一 App 内不展示价格、订单与购买入口</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4"><span class="idx">04</span>对象与状态</h2>
+
+    <h3>4.1 关键对象</h3>
+    <table>
+      <thead><tr><th style="width:140px">对象</th><th>定义</th><th>关键信息</th><th>归属</th></tr></thead>
+      <tbody>
+        <tr><td>家庭</td><td>一个家长账号与其绑定学生设备的集合</td><td>家庭 ID、家长账号、学生档案列表</td><td>主家长</td></tr>
+        <tr><td>学生档案</td><td>参与解锁规则的学生身份</td><td>昵称、年级、当前难度指针、积分账户余额</td><td>家庭</td></tr>
+        <tr><td>设备</td><td>安装学生端并被绑定的手机</td><td>设备标识、系统类型、管控模式（强制/提醒）、权限状态</td><td>学生档案</td></tr>
+        <tr><td>题目</td><td>可被组卷的最小内容单元</td><td>题干、选项、正确答案、解析、科目、年级、难度、题型、状态、使用统计</td><td>家庭题库</td></tr>
+        <tr><td>解锁策略</td><td>家长定义的本次解锁条件</td><td>题量、时长、门槛、授予时长、重试、时段、科目、难度比例、自动适配开关</td><td>学生档案</td></tr>
+        <tr><td>解锁任务</td><td>一次完整的答题与使用授权记录</td><td>策略快照、题目清单、作答、得分、结果、授予时长、异常标记、起止时间</td><td>学生档案</td></tr>
+        <tr><td>使用会话</td><td>通过后获得的一段可用时间</td><td>开始时间、授予时长、已用时长、是否家长授权</td><td>解锁任务</td></tr>
+        <tr><td>积分账户</td><td>学生的积分收支与余额</td><td>获得、消耗、来源任务、余额</td><td>学生档案</td></tr>
+        <tr><td>打卡记录</td><td>按学习日统计的连续通过记录</td><td>学习日、是否打卡、连续天数</td><td>学生档案</td></tr>
+        <tr><td>告警</td><td>一次异常检测的结果</td><td>类型、等级、发生时间、处置结果、是否已读</td><td>家庭</td></tr>
+        <tr><td>家长账号</td><td>以微信身份登录的付费与配置主体</td><td>微信 unionid、绑定手机号、家庭 ID、角色</td><td>家长本人</td></tr>
+        <tr><td>身份绑定</td><td>某台设备当前以哪种身份、属于哪个家庭</td><td>设备标识、当前身份（家长 / 学生）、家庭 ID、生效时间、解绑记录</td><td>设备 + 家庭</td></tr>
+        <tr><td>会员权益</td><td>家庭当前可用于管控的服务有效期</td><td>权益类型（试用 / 视频 / 月度 / 年度 / 永久）、起止时间、剩余时长、状态</td><td>家庭</td></tr>
+        <tr><td>订单</td><td>一次购买或退款请求</td><td>订单号、套餐、金额、支付渠道、状态、支付时间、退款原因</td><td>家庭 / 家长账号</td></tr>
+        <tr><td>视频奖励记录</td><td>一次激励视频观看与权益发放</td><td>观看时间、广告位、完播结果、发放时长、风控标记</td><td>家长账号</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.2 解锁任务状态</h3>
+    <table>
+      <thead><tr><th style="width:130px">状态</th><th>进入条件</th><th>允许操作</th><th>离开条件</th></tr></thead>
+      <tbody>
+        <tr><td>待开始</td><td>学生发起请求，组卷成功</td><td>开始答题 / 放弃（不计消耗）</td><td>进入答题中，或超 10 分钟未开始自动取消</td></tr>
+        <tr><td>答题中</td><td>学生点击开始且题目加载完成</td><td>作答、回改、交卷；系统计时</td><td>交卷、超时自动交卷、异常作废</td></tr>
+        <tr><td>已通过</td><td>得分 ≥ 门槛且无待复核异常</td><td>开始使用</td><td>学生点击开始使用 → 使用中</td></tr>
+        <tr><td>未通过</td><td>得分 &lt; 门槛，或超时未达门槛</td><td>再试一次（有剩余次数）/ 进入学习模式</td><td>重试、放弃、次数用尽</td></tr>
+        <tr><td>使用中</td><td>学生离开答题页进入桌面</td><td>正常使用、到期提醒</td><td>时长用尽、额度用尽、家长锁定</td></tr>
+        <tr><td>已结束</td><td>使用时长耗尽或学生主动结束</td><td>查看结果与解析</td><td>下次发起生成新任务</td></tr>
+        <tr><td>已作废</td><td>判定为异常（如离开答题页 2 次）</td><td>查看原因，重新发起</td><td>重新发起后新建任务</td></tr>
+        <tr><td>已取消</td><td>学生放弃或超时未开始</td><td>无</td><td>新任务</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.3 设备模式</h3>
+    <table>
+      <thead><tr><th style="width:120px">模式</th><th>可见状态</th><th>学生可做</th><th>切换条件</th></tr></thead>
+      <tbody>
+        <tr><td>锁屏待答</td><td>锁屏页显示任务摘要与“开始答题”</td><td>答题、紧急呼叫</td><td>开始答题 / 家长授权 / 进入禁止时段</td></tr>
+        <tr><td>使用中</td><td>桌面可用，悬浮计时与剩余时长</td><td>使用受限应用，查看剩余时间</td><td>时长或每日额度用尽 → 锁屏待答</td></tr>
+        <tr><td>学习模式</td><td>仅白名单应用可用，展示未通过原因</td><td>白名单应用、紧急呼叫、查看解析</td><td>进入下一允许时段 / 家长临时授权</td></tr>
+        <tr><td>休息模式</td><td>禁止时段提示与就寝提醒</td><td>紧急呼叫</td><td>到达允许时段 / 家长临时授权</td></tr>
+        <tr><td>家长授权</td><td>正常使用，标注“家长授权”</td><td>正常使用</td><td>授权时长结束</td></tr>
+        <tr><td>管控暂停</td><td>家庭无有效权益，学生端不出现锁屏答题</td><td>正常使用手机</td><td>家长开通会员或观看视频后恢复管控</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.4 家庭权益状态</h3>
+    <table>
+      <thead><tr><th style="width:120px">状态</th><th>含义</th><th>管控是否生效</th><th>家长端展示</th></tr></thead>
+      <tbody>
+        <tr><td>未开始</td><td>尚未绑定设备，试用未启动</td><td>否</td><td>“绑定设备后开始 3 天试用”</td></tr>
+        <tr><td>试用中</td><td>首次绑定后 72 小时内</td><td>是</td><td>剩余试用时长；到期前 24 小时提醒</td></tr>
+        <tr><td>视频权益中</td><td>通过激励视频获得，按 24 小时为单位累加</td><td>是</td><td>剩余天数与小时数；可继续观看</td></tr>
+        <tr><td>订阅生效中</td><td>月度或年度套餐有效期内</td><td>是</td><td>套餐名称、到期时间、自动续费开关</td></tr>
+        <tr><td>永久</td><td>购买永久套餐</td><td>是</td><td>“永久有效”，不展示续费入口</td></tr>
+        <tr><td>宽限期</td><td>付费套餐到期后的 7 天</td><td>是</td><td>“还有 x 天停止管控”，突出续费与视频入口</td></tr>
+        <tr><td>已过期</td><td>宽限期结束仍无权益</td><td>否</td><td>配置与历史保留，一键开通后恢复</td></tr>
+        <tr><td>退款中</td><td>退款审核中</td><td>是（至退款完成）</td><td>订单状态与预计到账时间</td></tr>
+      </tbody>
+    </table>
+    <p class="note">试用结束不进入宽限期，宽限期只针对已付费套餐到期；试用被当作赠送权益，避免“无限试用 + 宽限”导致长期免费。<span class="tag tbd">假设</span></p>
+
+    <h3>4.5 身份绑定规则</h3>
+    <table>
+      <thead><tr><th style="width:160px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>单设备单身份</td><td>同一台设备同一时间只能处于家长身份或学生身份；身份绑定由设备标识与家庭关系共同确定</td></tr>
+        <tr><td>已绑定设备启动</td><td>已绑定学生身份的设备启动后直接进入学生模式，不再展示身份选择页，避免学生反复看到“我是家长”入口</td></tr>
+        <tr><td>家长身份进入</td><td>选择“我是家长”后必须微信登录并绑定手机号；可创建新家庭或进入已有家庭</td></tr>
+        <tr><td>学生身份进入</td><td>选择“我是学生”后输入配对码加入家庭；无需微信登录，不创建独立账号</td></tr>
+        <tr><td>同一账号体系</td><td>家长账号唯一，由微信登录确定；学生身份不注册独立账号，按设备绑定到家庭。同一微信可在多台设备作为家长登录，但一台设备只保留一个身份 <span class="tag tbd">学生身份是否绑定微信待定</span></td></tr>
+        <tr><td>学生 → 家长</td><td>学生模式下不提供切换入口；需从启动页选择家长，微信登录必须是本家庭主家长，并完成二次验证，否则拒绝进入</td></tr>
+        <tr><td>家长 → 学生</td><td>家长设备可作为学生设备绑定到某个家庭，但需二次确认“本机将被管控”，绑定后该设备不再显示家长功能</td></tr>
+        <tr><td>设备已有归属</td><td>设备已被某家庭绑定为学生设备时，任何账号创建新家庭并绑定该设备都会被拦截，需原家庭主家长解绑</td></tr>
+        <tr><td>解绑与重装</td><td>解绑仅主家长可操作；Android 由设备管理员阻止卸载，iOS 卸载重装后需重新配对，重装期间管控失效并通知家长</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5"><span class="idx">05</span>核心流程</h2>
+
+    <h3>5.1 首次安装与配对</h3>
+    <ol>
+      <li>家长在手机上安装 App，启动页选择“我是家长”，微信登录并绑定手机号，创建家庭，填写学生昵称与年级（年级决定组卷基线，必填）。</li>
+      <li>家长生成 6 位配对码，有效期 10 分钟，一次性使用。</li>
+      <li>学生在自己的手机上安装同一个 App，选择“我是学生”，输入配对码，看到家长昵称、规则摘要与数据收集说明，确认后进入权限引导。</li>
+      <li>学生逐项授权：设备管理员、无障碍、使用情况访问、悬浮窗、后台运行、自启动。每项说明用途与不授权的后果。</li>
+      <li>权限检查完成后进入“强制模式”；任一核心权限缺失则进入“提醒模式”，家长身份显示黄色标记与恢复指引。</li>
+      <li>家长身份看到“已绑定”，并可查看权限清单与最近一次检查时间；首台设备绑定成功即开始 72 小时试用（见 FR-12）。</li>
+    </ol>
+
+    <h3>5.2 日常解锁主流程</h3>
+    <div class="flow">
+      <div class="step"><b>STEP 1</b><span>学生点亮屏幕，尝试进入桌面或打开受限应用</span></div>
+      <div class="step"><b>STEP 2</b><span>系统校验：允许时段、每日额度、绑定状态、权限状态、时间可信</span></div>
+      <div class="step"><b>STEP 3</b><span>按策略快照组卷，展示任务摘要：题量 / 时长 / 门槛 / 授予时长</span></div>
+      <div class="step"><b>STEP 4</b><span>倒计时答题，可回改；超时自动交卷，未答计错</span></div>
+      <div class="step"><b>STEP 5</b><span>服务端判分并签发结果；达到门槛则授予时长</span></div>
+      <div class="step"><b>STEP 6</b><span>进入使用会话，家长端出现记录，积分与打卡更新</span></div>
+    </div>
+
+    <h3>5.3 未通过的恢复路径</h3>
+    <div class="flow">
+      <div class="step"><b>失败</b><span>得分低于门槛，结果页显示差距与错题解析</span></div>
+      <div class="step"><b>重试</b><span>剩余次数内可立即重试（受冷却时间限制）；重新组卷</span></div>
+      <div class="step"><b>用尽</b><span>进入学习模式，仅白名单应用可用，展示未通过原因</span></div>
+      <div class="step"><b>恢复</b><span>到达下一个允许时段自动恢复；或家长临时授权立即使用</span></div>
+    </div>
+    <p><strong>设计判断：</strong>未通过不等于断网式惩罚。产品必须保留三条恢复路径（重试、下一时段、家长授权），否则学生会转向卸载或借他人手机，规则反而失效。紧急呼叫与家长联系方式在任何模式下均可用。</p>
+
+    <h3>5.4 策略修改与生效</h3>
+    <p>策略在学生端“发起下一次解锁请求”时拉取并快照。修改保存后：进行中的答题任务与使用会话不受影响，下一次任务使用新参数；学生端锁屏页摘要随之更新。家长端记录中同时保存“当次策略快照”，避免事后对账争议。</p>
+
+    <h3>5.5 家长临时授权</h3>
+    <p>家长端选择学生与时长（30 / 60 / 120 分钟），完成二次验证（口令或生物识别）后下发。学生端在 10 秒内收到并直接进入使用中，记录标注“家长授权”，不产生积分、不计连续打卡。每个学习日最多 3 次。</p>
+
+    <h3>5.6 注册、试用与开通</h3>
+    <div class="flow">
+      <div class="step"><b>STEP 1</b><span>家长微信一键登录，授权基础资料并绑定手机号</span></div>
+      <div class="step"><b>STEP 2</b><span>创建家庭与学生档案，生成配对码</span></div>
+      <div class="step"><b>STEP 3</b><span>首台设备配对成功，自动开始 72 小时全功能试用</span></div>
+      <div class="step"><b>STEP 4</b><span>试用到期前 24 小时提醒：开通会员或观看激励视频</span></div>
+      <div class="step"><b>STEP 5</b><span>选择套餐与支付方式，支付成功即刻生效</span></div>
+    </div>
+
+    <h3>5.7 权益到期与恢复</h3>
+    <div class="flow">
+      <div class="step"><b>到期前 3 天 / 1 天</b><span>家长端推送与会员中心横幅，学生端不出现付费信息</span></div>
+      <div class="step"><b>到期后 7 天</b><span>宽限期，管控继续执行，家长端标注“即将停止管控”</span></div>
+      <div class="step"><b>宽限结束</b><span>停止管控，学生端解除锁屏；配置、题库、历史记录保留</span></div>
+      <div class="step"><b>恢复</b><span>购买任意套餐或观看视频领取 1 天，10 秒内恢复管控，无需重新配对</span></div>
+    </div>
+    <p><strong>设计判断：</strong>不能在无权益时继续限制学生手机——这会让家庭在不知情的情况下依赖一项未付费的服务，也会引发“为什么突然被锁”的投诉。反过来，“到期即停止”必须提前充分告知，否则家长会认为产品擅自放弃管控。两种风险都用到期前提醒与 7 天宽限期来化解。</p>
+
+    <h2 id="s6"><span class="idx">06</span>功能架构</h2>
+    <div class="layers">
+      <div class="layer"><div class="lbl">身份与账号</div><div class="body">单 App 启动身份选择 · 微信登录 · 设备身份绑定 · 家庭归属校验 · 身份切换与解绑</div></div>
+      <div class="layer"><div class="lbl">学生身份（同一 App）</div><div class="body">锁屏答题入口 · 答题 · 结果 · 使用计时 · 学习模式 · 激励中心 · 历史记录</div></div>
+      <div class="layer"><div class="lbl">家长身份（同一 App）</div><div class="body">家庭与设备 · 题库 · 策略 · 记录与周报 · 兑换审批 · 安全告警 · 临时授权 · 会员与订单</div></div>
+      <div class="layer"><div class="lbl">商业化</div><div class="body">微信登录 · 试用 · 套餐与权益 · 支付 · 自动续费 · 退款 · 激励视频 · 权益下发与回收</div></div>
+      <div class="layer"><div class="lbl">规则引擎</div><div class="body">策略快照 · 选题匹配 · 难度适配 · 判分与门槛 · 使用会话计时 · 积分与打卡 · 异常分级</div></div>
+      <div class="layer"><div class="lbl">安全底座</div><div class="body">设备绑定 · 权限巡检 · 时间可信 · 进程守护 · 任务完整性校验 · 通过凭证签发</div></div>
+      <div class="layer"><div class="lbl">记录与通知</div><div class="body">任务记录 · 逐题快照 · 周报 · 推送与告警 · 数据保留与注销</div></div>
+    </div>
+
+    <table>
+      <thead><tr><th style="width:90px">模块</th><th>负责的决策</th><th>不负责</th></tr></thead>
+      <tbody>
+        <tr><td>规则引擎</td><td>出什么题、得多少分、能不能用、能用多久</td><td>不做内容推荐与教育评价</td></tr>
+        <tr><td>安全底座</td><td>规则是否被执行、尝试绕过时如何处置</td><td>不读取应用内容与通讯数据</td></tr>
+        <tr><td>激励系统</td><td>积分、成就、打卡、兑换审批</td><td>不改变解锁门槛与题量</td></tr>
+        <tr><td>商业化</td><td>家庭是否有权使用管控、权益何时到期、订单与退款</td><td>不决定管控规则本身，不向学生端露出价格与购买入口</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s7"><span class="idx">07</span>功能需求</h2>
+
+    <!-- FR-01 -->
+    <h3 id="fr01">FR-01 家庭与设备配对</h3>
+    <p><strong>目的：</strong>建立“家长—学生—设备”的唯一关系，使后续所有规则、记录与告警有明确归属。</p>
+    <p><strong>入口：</strong>家长端首次注册后的“添加孩子”；学生端首次安装的“输入配对码”。</p>
+    <h4>处理规则</h4>
+    <table>
+      <thead><tr><th style="width:150px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>学生档案</td><td>昵称、年级必填；生日、性别、学校选填且默认不采集 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>配对码</td><td>6 位数字，有效期 10 分钟，一次性；使用后立即失效；最多同时存在 1 个有效码</td></tr>
+        <tr><td>绑定范围</td><td>一台学生设备同一时间只属于一个家庭；一个学生档案绑定 1 台主设备 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>模式判定</td><td>核心权限齐全 → 强制模式；缺任一 → 提醒模式，并在家长端持续提示</td></tr>
+        <tr><td>解绑</td><td>仅主家长可操作，需二次验证与确认文案；解绑后设备恢复普通使用，历史记录保留</td></tr>
+        <tr><td>换机</td><td>新设备输入配对码后需主家长确认；确认前旧设备保持管控，新设备进入提醒模式</td></tr>
+      </tbody>
+    </table>
+    <h4>异常</h4>
+    <ul>
+      <li>配对码过期或已被使用：提示重新生成，不消耗任何记录。</li>
+      <li>学生端已绑定其他家庭：提示“请先在原家庭解绑”，不提供自助覆盖入口。</li>
+      <li>权限被拒绝：不阻断配对，但明确展示“当前为提醒模式，规则可能被绕过”。</li>
+    </ul>
+
+    <!-- FR-02 -->
+    <h3 id="fr02">FR-02 题库管理</h3>
+    <p><strong>目的：</strong>让家长以最低成本提供与学生水平匹配、可被系统调用的题目。</p>
+    <p><strong>布局：</strong>题库列表（筛选、搜索、批量操作）→ 题目详情/编辑 → 导入向导 → 导入校验报告 → 发布确认。</p>
+    <h4>处理规则</h4>
+    <table>
+      <thead><tr><th style="width:140px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>分类维度</td><td>科目（语文、数学、英语、物理、化学、生物、历史、地理、道德与法治、科学）、年级（1–12）、难度（易 / 中 / 难）、题型（单选 P0，判断 P0，多选与填空 P1）</td></tr>
+        <tr><td>创建必填</td><td>题干、至少 2 个选项、正确答案、科目、年级、难度、题型；解析在“发布”时必填</td></tr>
+        <tr><td>状态</td><td>草稿 → 已发布（可被组卷）→ 已归档（不再出题，保留历史引用）。已发布题目不可直接删除，只能归档</td></tr>
+        <tr><td>编辑已发布题目</td><td>保存为新版本；历史任务的题目快照不变，已产生的得分不追溯修改</td></tr>
+        <tr><td>批量导入</td><td>Excel/CSV 模板；单次 ≤ 500 题 <span class="tag tbd">假设</span>；导入题默认草稿，校验通过后由家长确认批量发布</td></tr>
+        <tr><td>导入校验</td><td>必填缺失、选项数越界、答案不在选项内、科目/年级枚举错误、同科目同年级题干相似度 ≥ 90% 视为重复；报告定位到行号与原因，修正后可重试</td></tr>
+        <tr><td>使用统计</td><td>出题次数与正确率；正确率 &lt; 40%（≥5 次）标记“待复核”；&gt; 95%（≥5 次）标记“可能过易”</td></tr>
+        <tr><td>容量</td><td>家庭题库上限 2000 题 <span class="tag tbd">假设</span>；达到 80% 时提示清理归档题</td></tr>
+        <tr><td>示例题库</td><td>系统提供各年级示例题包，家长可一键启用或停用；启用后计入可用题量 <span class="tag tbd">版权待定</span></td></tr>
+      </tbody>
+    </table>
+    <h4>题目字段</h4>
+    <table>
+      <thead><tr><th style="width:130px">字段</th><th>类型/取值</th><th>必填</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>题目编号</td><td>系统生成</td><td>—</td><td>全局唯一，用于任务快照</td></tr>
+        <tr><td>题干</td><td>文本，≤ 500 字</td><td>是</td><td>支持纯文本；不支持的富文本格式在导入时报错</td></tr>
+        <tr><td>题型</td><td>单选 / 判断 / 多选 / 填空</td><td>是</td><td>P0 仅单选与判断可发布</td></tr>
+        <tr><td>选项</td><td>2–6 项</td><td>是</td><td>判断固定“正确 / 错误”</td></tr>
+        <tr><td>正确答案</td><td>选项序号集合</td><td>是</td><td>必须落在选项范围内</td></tr>
+        <tr><td>解析</td><td>文本，≤ 300 字</td><td>发布必填</td><td>结果页展示；防止学生只记答案不理解</td></tr>
+        <tr><td>科目 / 年级</td><td>枚举</td><td>是</td><td>组卷过滤条件</td></tr>
+        <tr><td>难度</td><td>易 / 中 / 难</td><td>是</td><td>影响难度配额与自动适配</td></tr>
+        <tr><td>知识点标签</td><td>0–3 个</td><td>否</td><td>用于 P1 错题复习</td></tr>
+        <tr><td>状态</td><td>草稿 / 已发布 / 已归档</td><td>是</td><td>仅已发布可被选中</td></tr>
+      </tbody>
+    </table>
+    <h4>异常</h4>
+    <ul>
+      <li>题库为空：学生端不生成任务，锁屏页显示“题库尚未配置，已通知家长”，不计未通过、不消耗次数。</li>
+      <li>导入全部失败：保留原文件解析结果，允许下载错误清单修正后重传。</li>
+      <li>题目被归档但被历史任务引用：记录仍可打开，展示当时快照，不展示编辑入口。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="dhead"><b>DEMO · FR-02 题库列表</b><span>可按科目与难度筛选，状态决定是否参与组卷</span></div>
+      <p class="dnote">演示数据为示例题；实际题库由家长维护。</p>
+      <div class="filters" id="bankFilters"></div>
+      <table class="bank">
+        <thead><tr><th>题干摘要</th><th style="width:56px">科目</th><th style="width:52px">年级</th><th style="width:46px">难度</th><th style="width:58px">状态</th></tr></thead>
+        <tbody id="bankBody"></tbody>
+      </table>
+      <div class="dnote" id="bankCount" style="margin:0"></div>
+    </div>
+
+    <!-- FR-03 -->
+    <h3 id="fr03">FR-03 解锁策略配置（DIY）</h3>
+    <p><strong>目的：</strong>用一组可理解、可校验的参数，把“学多少、答多快、考多少分、换多久使用”变成可执行规则。</p>
+    <p><strong>入口：</strong>家长端“策略”；首次绑定后自动生成默认策略。</p>
+    <h4>参数与取值</h4>
+    <table>
+      <thead><tr><th style="width:150px">参数</th><th style="width:170px">取值范围</th><th style="width:100px">默认</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>题型</td><td>单选 / 判断（可多选）</td><td>单选</td><td>至少选一项</td></tr>
+        <tr><td>科目组合</td><td>科目多选，≥ 1 项</td><td>数学 + 语文</td><td>组卷只从所选科目取题</td></tr>
+        <tr><td>年级范围</td><td>当前年级 / 当前年级 ±1</td><td>当前年级</td><td>跨年级时按难度比例补齐</td></tr>
+        <tr><td>难度比例</td><td>易 / 中 / 难，合计 100%</td><td>40 / 50 / 10</td><td>自动适配会在此基础上偏移档位</td></tr>
+        <tr><td>题量</td><td>3–20 题</td><td>5</td><td>与门槛共同决定至少答对数</td></tr>
+        <tr><td>答题时长</td><td>3–30 分钟</td><td>5</td><td>总倒计时，非单题计时</td></tr>
+        <tr><td>分数门槛</td><td>60–100，步长 5</td><td>80</td><td>得分 ≥ 门槛即通过</td></tr>
+        <tr><td>授予时长</td><td>10–120 分钟，步长 5</td><td>30</td><td>通过后可用的连续时长</td></tr>
+        <tr><td>每日使用上限</td><td>30–360 分钟，步长 30</td><td>120</td><td>按学习日累计，达到后当天不再生成任务</td></tr>
+        <tr><td>重试次数</td><td>0–2 次</td><td>1</td><td>每次解锁请求内的额外机会</td></tr>
+        <tr><td>重试冷却</td><td>5–60 分钟</td><td>10</td><td>重试前需等待，防止冲动连点</td></tr>
+        <tr><td>允许时段</td><td>1–3 段</td><td>06:30–22:00</td><td>时段外进入休息模式；紧急呼叫不受限</td></tr>
+        <tr><td>学习模式白名单</td><td>≤ 5 个应用</td><td>电话、短信、词典、家长指定学习应用</td><td>未通过后可用</td></tr>
+        <tr><td>自动适配</td><td>开 / 关</td><td>开</td><td>按近期正确率调整难度档位，不改变题量与门槛</td></tr>
+        <tr><td>管控模式</td><td>强制 / 提醒</td><td>按权限自动判定</td><td>家长只读，不可手动切换</td></tr>
+      </tbody>
+    </table>
+    <h4>校验规则（保存时执行）</h4>
+    <table>
+      <thead><tr><th style="width:80px">编号</th><th>规则</th><th>处理</th></tr></thead>
+      <tbody>
+        <tr><td>V1</td><td>答题时长 ≥ 题量 × 20 秒</td><td>不满足则阻止保存，提示延长时长或减少题量</td></tr>
+        <tr><td>V2</td><td>难度比例合计 = 100%</td><td>不满足则阻止保存</td></tr>
+        <tr><td>V3</td><td>可用题目数 ≥ 题量</td><td>不足则阻止保存，并跳转题库补充</td></tr>
+        <tr><td>V4</td><td>可用题目数 ≥ 题量 × 1.2</td><td>介于两者之间仅警告“近期可能重复出题”</td></tr>
+        <tr><td>V5</td><td>至少 1 个允许时段，且时段不重叠</td><td>不满足则阻止保存</td></tr>
+        <tr><td>V6</td><td>门槛 = 100 且题量 &gt; 10</td><td>仅提示“连续失败概率较高”，不阻止</td></tr>
+        <tr><td>V7</td><td>授予时长 &gt; 每日上限</td><td>仅提示“单次授予已超过每日上限”</td></tr>
+      </tbody>
+    </table>
+    <h4>结果与状态变化</h4>
+    <p>保存成功后策略状态为“生效”，下一次解锁任务使用新参数；学生端锁屏页摘要在下一次请求时刷新；家长端记录保留修改人与修改时间。</p>
+
+    <div class="demo">
+      <div class="dhead"><b>DEMO · FR-03 策略配置</b><span>拖动参数，实时看到“至少答对几题”与可行性提示</span></div>
+      <p class="dnote">左侧为参数调整，右侧为家长看到的规则摘要；提示仅为演示，保存规则见上表。</p>
+      <div class="demo-controls">
+        <div class="field"><label>题量 <b id="vN">5 题</b></label><input type="range" min="3" max="20" step="1" value="5" id="inN" oninput="sUpdate()"></div>
+        <div class="field"><label>答题时长 <b id="vT">5 分钟</b></label><input type="range" min="3" max="30" step="1" value="5" id="inT" oninput="sUpdate()"></div>
+        <div class="field"><label>分数门槛 <b id="vTh">80 分</b></label><input type="range" min="60" max="100" step="5" value="80" id="inTh" oninput="sUpdate()"></div>
+        <div class="field"><label>授予时长 <b id="vG">30 分钟</b></label><input type="range" min="10" max="120" step="5" value="30" id="inG" oninput="sUpdate()"></div>
+        <div class="field"><label>每日使用上限 <b id="vD">120 分钟</b></label><input type="range" min="30" max="360" step="30" value="120" id="inD" oninput="sUpdate()"></div>
+        <div class="field"><label>重试次数 <b id="vR">1 次</b></label><input type="range" min="0" max="2" step="1" value="1" id="inR" oninput="sUpdate()"></div>
+      </div>
+      <div class="preview" id="sPreview"></div>
+      <div class="warnline" id="sWarn"></div>
+    </div>
+
+    <!-- FR-04 -->
+    <h3 id="fr04">FR-04 智能选题</h3>
+    <p><strong>目的：</strong>让每次组卷既满足家长规则，又能在限定题量内被学生完成，难度贴近当前水平。</p>
+    <p><strong>触发：</strong>学生发起解锁请求且前置校验通过时，由服务端生成本次题目集并固化到任务快照。</p>
+    <h4>组卷步骤</h4>
+    <ol>
+      <li><strong>快照策略：</strong>读取当前生效策略，固化到任务，本次答题期间不受后续修改影响。</li>
+      <li><strong>候选过滤：</strong>状态为已发布、科目属于所选组合、年级属于所选范围、题型符合配置。</li>
+      <li><strong>近期去重：</strong>排除最近 10 次解锁任务中出现过的题；7 天内出现 ≥ 2 次的题仅在题目不足时启用。</li>
+      <li><strong>难度配额：</strong>按难度比例计算各档题数，取整后的余数依次补入“中 → 易 → 难”。</li>
+      <li><strong>自动适配：</strong>依据最近 5 次任务正确率调整难度指针；连续 2 次 &gt; 90% 上移一档，连续 2 次 &lt; 75% 下移一档，指针影响配额比例但不改变题量与门槛。</li>
+      <li><strong>组卷与下发：</strong>题目顺序与选项位置随机；正确答案与判分逻辑不随题目下发到学生端。</li>
+      <li><strong>记录：</strong>任务快照记录题目编号、难度分布、指针档位与组卷时间，供家长端核对。</li>
+    </ol>
+    <h4>难度指针</h4>
+    <table>
+      <thead><tr><th style="width:120px">指针</th><th>易 / 中 / 难</th><th>适用观察</th></tr></thead>
+      <tbody>
+        <tr><td>偏易</td><td>50 / 45 / 5</td><td>连续 2 次正确率 &lt; 75%，或首次使用阶段</td></tr>
+        <tr><td>标准</td><td>40 / 50 / 10</td><td>默认；正确率处于 75%–90%</td></tr>
+        <tr><td>偏难</td><td>25 / 50 / 25</td><td>连续 2 次正确率 &gt; 90%</td></tr>
+      </tbody>
+    </table>
+    <p><strong>设计判断：</strong>家长设置的是基准比例，自动适配只做一档偏移并保持家长可见，避免“系统偷偷改题”造成不信任；关闭自动适配后完全按家长比例执行。</p>
+    <h4>题目不足时的降级顺序</h4>
+    <table>
+      <thead><tr><th style="width:90px">顺序</th><th>动作</th><th>学生端表现</th><th>家长端通知</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>放宽“最近 10 次”去重，允许使用更早出现过的题</td><td>无变化</td><td>无</td></tr>
+        <tr><td>2</td><td>放宽年级到所选范围的上限</td><td>无变化，任务标注“跨年级补题”</td><td>题库缺口提示（每日一次）</td></tr>
+        <tr><td>3</td><td>按实际可用题量出题，且不少于 3 题</td><td>锁屏页显示实际题量与门槛</td><td>记录标注“题量降级”，推送补充建议</td></tr>
+        <tr><td>4</td><td>可用题量 &lt; 3</td><td>不生成任务，显示“题库不足，已通知家长”</td><td>即时告警；不计未通过、不消耗重试</td></tr>
+      </tbody>
+    </table>
+    <h4>异常</h4>
+    <ul>
+      <li>生成阶段断网：提示“网络异常，请重试”，不进入强制锁死；已生成但未开始的题目 10 分钟后失效。</li>
+      <li>策略在生成瞬间被修改：以生成时快照为准，家长端记录展示快照版本。</li>
+    </ul>
+
+    <!-- FR-05 -->
+    <h3 id="fr05">FR-05 答题与解锁</h3>
+    <p><strong>目的：</strong>让学生在一次短时、明确的任务中完成验证，并清楚知道结果与下一步。</p>
+    <p><strong>布局：</strong>S-03 锁屏入口 → S-04 答题页 → S-05 结果页。</p>
+    <h4>锁屏入口</h4>
+    <ul>
+      <li>展示：家长设置的规则摘要（题量 / 答题时长 / 门槛 / 通过后可用时长）、剩余重试次数、最近一次通过时间。</li>
+      <li>操作：开始答题；紧急呼叫；查看激励中心（仅通过后的使用时段或学习模式内可进入）。</li>
+      <li>禁止：关闭管控、切换账号、卸载、进入桌面。此类入口不提供，避免“引导式绕过”。</li>
+    </ul>
+    <h4>答题页</h4>
+    <table>
+      <thead><tr><th style="width:150px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>计时</td><td>题目加载完成后开始总倒计时；切后台、锁屏均继续计时；系统来电或系统级弹窗中断时暂停，返回后继续，单次暂停上限 5 分钟</td></tr>
+        <tr><td>作答</td><td>单题单选；可上一题、下一题、回改；不提供“跳过”以外的额外提示，不显示难度标签</td></tr>
+        <tr><td>交卷</td><td>存在未答题时二次确认“还有 x 题未作答，提交后计为错误”</td></tr>
+        <tr><td>超时</td><td>自动交卷，未作答按错误计；结果页标注“超时提交”</td></tr>
+        <tr><td>防泄露</td><td>答题页禁止截屏（系统能力范围内）；切后台次数实时记录</td></tr>
+        <tr><td>中断</td><td>因来电暂停超过 5 分钟按超时处理；因异常作废时免费重新发起一次 <span class="tag tbd">假设</span></td></tr>
+      </tbody>
+    </table>
+    <h4>结果页</h4>
+    <table>
+      <thead><tr><th style="width:120px">结果</th><th>展示内容</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>通过</td><td>得分 / 门槛、答对数、用时、授予时长、获得积分、连续打卡天数</td><td>开始使用；查看错题解析</td></tr>
+        <tr><td>未通过</td><td>得分、答对数、距门槛差多少、剩余重试次数与冷却时间、答错题的正确答案与解析</td><td>再试一次（有次数且冷却结束）；进入学习模式</td></tr>
+        <tr><td>超时</td><td>同上，并显示“超时提交，未答题计错”</td><td>重试或学习模式</td></tr>
+        <tr><td>作废</td><td>作废原因（如离开答题页 2 次）、是否消耗重试次数</td><td>重新发起；联系家长</td></tr>
+        <tr><td>待复核</td><td>提示“结果校核中，请稍候”，设备保持锁定</td><td>自动重试最多 30 秒</td></tr>
+      </tbody>
+    </table>
+    <p><strong>设计判断：</strong>未通过也展示解析。题目随机且近期去重，展示解析不会形成“背答案通关”，但能降低挫败感并把失败转化为学习。</p>
+
+    <div class="demo">
+      <div class="dhead"><b>DEMO · FR-05 答题解锁</b><span>5 题 / 5 分钟 / 80 分 / 通过得 30 分钟</span></div>
+      <p class="dnote">演示含锁屏、答题、结果与学习模式；可点击“模拟切后台”查看异常作废处置。</p>
+      <div class="phone">
+        <div class="pbar"><span>21:14</span><span>学习解锁</span><span>82%</span></div>
+        <div class="pbody" id="quizStage"></div>
+      </div>
+    </div>
+
+    <!-- FR-06 -->
+    <h3 id="fr06">FR-06 使用会话与受限模式</h3>
+    <p><strong>目的：</strong>把“通过”转换为可计量、可结束的使用权利，并在失败或超限时提供安全、不激化冲突的受限状态。</p>
+    <h4>规则</h4>
+    <table>
+      <thead><tr><th style="width:160px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>计时起点</td><td>学生点击“开始使用”且系统确认已离开答题页进入桌面时开始；仅在结果页停留不计时</td></tr>
+        <tr><td>暂停</td><td>息屏、关机不计时；其余前台使用均计入，包含使用其他应用</td></tr>
+        <tr><td>提醒</td><td>剩余 5 分钟与 1 分钟各提醒一次；提醒样式不遮挡当前应用操作</td></tr>
+        <tr><td>到期</td><td>立即锁定，当前应用退出至锁屏答题页；已通过但未开始的任务在 30 分钟内有效，超时失效 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>每日上限</td><td>按学习日累计；达到后不再生成任务，锁屏页显示“今日额度已用完”并提供家长授权入口</td></tr>
+        <tr><td>学习模式</td><td>仅白名单应用与紧急呼叫可用；展示未通过原因与下次可答题时间；不展示题库内容</td></tr>
+        <tr><td>休息模式</td><td>禁止时段内不生成任务；仅紧急呼叫；可设置就寝提醒文案</td></tr>
+        <tr><td>家长授权</td><td>30 / 60 / 120 分钟，每日最多 3 次，不产生积分、不计打卡</td></tr>
+        <tr><td>结束</td><td>学生主动点击“结束使用”立即进入锁屏待答；已用时长不可退回</td></tr>
+      </tbody>
+    </table>
+    <p><strong>能力边界：</strong>强制模式依赖系统级权限，无法承诺 100% 阻止所有绕过；iOS 受系统限制，MVP 以提醒模式为主，家长端必须明确显示当前模式，不能用“已完全管控”误导家长。<span class="tag tbd">待定</span></p>
+
+    <!-- FR-07 -->
+    <h3 id="fr07">FR-07 防绕过与三层校验</h3>
+    <p><strong>目的：</strong>保证“必须答题达标才能使用”这条规则在真实使用中成立，并使每一次绕过尝试对家长可见。</p>
+
+    <h4>三层校验</h4>
+    <table>
+      <thead><tr><th style="width:120px">层级</th><th>时机</th><th>校验内容</th><th>失败处理</th></tr></thead>
+      <tbody>
+        <tr><td>配置校验</td><td>保存题目与策略时</td><td>FR-02 的导入校验、FR-03 的 V1–V7</td><td>阻止保存并给出可执行修正建议</td></tr>
+        <tr><td>任务校验</td><td>学生发起解锁时</td><td>绑定状态、权限状态、时间可信、允许时段、每日额度、题库可用量、策略完整性</td><td>不生成任务，按原因展示对应页面（学习模式 / 休息模式 / 题库不足 / 恢复指引）</td></tr>
+        <tr><td>结果校验</td><td>交卷后</td><td>服务端判分为准；作答会话与任务绑定；异常标记复核；通过凭证由服务端签发</td><td>待复核期间保持锁定；复核不一致按未通过处理</td></tr>
+      </tbody>
+    </table>
+
+    <h4>绕过手段与处置</h4>
+    <table>
+      <thead><tr><th style="width:170px">绕过方式</th><th>检测方式</th><th>处置等级</th><th>家长端</th></tr></thead>
+      <tbody>
+        <tr><td>关闭无障碍 / 使用统计 / 设备管理员</td><td>锁屏前与每 5 分钟心跳校验权限状态</td><td>一级：提示并引导恢复；缺失超 10 分钟升为三级</td><td>即时推送 + 红点</td></tr>
+        <tr><td>强杀进程或一键清理</td><td>守护进程被终止、心跳中断</td><td>自动重启锁屏；同一学习日 ≥ 3 次升为三级</td><td>记录次数与时间</td></tr>
+        <tr><td>修改系统时间</td><td>与服务端时间比对，偏移 &gt; 2 分钟</td><td>一级提示；回拨 &gt; 10 分钟或累计 3 次升为三级；计时以服务端时间为准</td><td>推送 + 记录</td></tr>
+        <tr><td>卸载应用</td><td>设备管理员阻止卸载；卸载需家长口令</td><td>阻止；异常卸载升为三级</td><td>推送，需重新配对</td></tr>
+        <tr><td>清除应用数据</td><td>绑定信息丢失，重新打开即识破</td><td>四级：锁定并等待家长确认，重新配对前不可用</td><td>推送 + 引导重新绑定</td></tr>
+        <tr><td>换机 / 新设备登录</td><td>设备标识 + 学生档案绑定关系</td><td>新设备需家长确认；未确认仅提醒模式</td><td>推送确认请求</td></tr>
+        <tr><td>答题时切后台搜答案</td><td>离开答题页次数与时长；超过 30 秒计一次</td><td>1 次提示；同一任务 2 次本次作废；3 次升为三级</td><td>标记“可疑作答”</td></tr>
+        <tr><td>截屏 / 拍照分享题目</td><td>答题页禁止截屏（系统能力范围内）</td><td>阻止截屏；无法阻止的外部拍照仅记录</td><td>记录（无内容）</td></tr>
+        <tr><td>乱选 / 极速作答</td><td>单题间隔 &lt; 2 秒且正确率 100%，或整卷用时 &lt; 题量 × 5 秒</td><td>标记“可疑”，不计积分；不直接判未通过</td><td>记录 + 可疑标记</td></tr>
+        <tr><td>断网</td><td>网络状态与心跳</td><td>生成与判定阶段断网则保持锁定；判定阶段离线答案以服务端复核为准</td><td>离线超 1 小时推送</td></tr>
+        <tr><td>悬浮窗 / 分屏覆盖锁屏</td><td>系统能力范围内检测前台窗口</td><td>锁屏页置顶；无法保证时在家长端标注能力边界</td><td>能力说明</td></tr>
+        <tr><td>使用家长手机操作</td><td>家长端敏感操作需二次验证</td><td>验证失败即拦截，记录失败次数</td><td>记录异常操作</td></tr>
+        <tr><td>学生自行选择“家长身份”并自建家庭</td><td>校验设备已有绑定关系；家长身份需微信登录且账号必须是本家庭主家长</td><td>拦截创建家庭与绑定该设备，提示联系家长；不消耗重试</td><td>二级告警</td></tr>
+      </tbody>
+    </table>
+
+    <h4>处置等级</h4>
+    <table>
+      <thead><tr><th style="width:80px">等级</th><th>含义</th><th>学生端</th><th>家长端</th></tr></thead>
+      <tbody>
+        <tr><td>一级</td><td>可恢复的轻度异常</td><td>提示与恢复引导，不打断当前任务</td><td>通知，可忽略</td></tr>
+        <tr><td>二级</td><td>影响本次任务有效性</td><td>本次任务作废或需重新答题</td><td>推送“可疑作答”</td></tr>
+        <tr><td>三级</td><td>规则执行受损</td><td>强制学习模式，直至家长处理或下一允许时段</td><td>强提醒 + 处理入口（远程授权 / 重新绑定）</td></tr>
+        <tr><td>四级</td><td>绑定关系失效</td><td>设备锁定，仅紧急呼叫</td><td>强提醒，需重新配对或解绑</td></tr>
+      </tbody>
+    </table>
+    <p><strong>误报处理：</strong>系统升级、重启、厂商清理导致的权限误判记为“待确认”，恢复权限后自动解除并保留记录，不直接升级为三级；连续 3 次同类误报在家长端合并展示。</p>
+
+    <!-- FR-08 -->
+    <h3 id="fr08">FR-08 激励体系</h3>
+    <p><strong>目的：</strong>把“被要求答题”转化为“积累成果”，让学生有独立于家长监督的持续动机。</p>
+    <h4>积分</h4>
+    <table>
+      <thead><tr><th style="width:190px">获取方式</th><th style="width:100px">积分</th><th>限制</th></tr></thead>
+      <tbody>
+        <tr><td>通过一次解锁任务</td><td>+10</td><td>每个学习日最多 3 次计分</td></tr>
+        <tr><td>单次满分</td><td>额外 +5</td><td>每个学习日最多 1 次</td></tr>
+        <tr><td>连续打卡 3 天</td><td>+5</td><td>里程碑一次性发放</td></tr>
+        <tr><td>连续打卡 7 天</td><td>+15</td><td>同上</td></tr>
+        <tr><td>连续打卡 30 天</td><td>+50</td><td>同上</td></tr>
+        <tr><td>家长鼓励积分</td><td>0–20</td><td>每学习日上限 20，需附一句鼓励语</td></tr>
+        <tr><td>未通过 / 家长授权 / 任务作废</td><td>0</td><td>不扣分，不产生负反馈</td></tr>
+        <tr><td>可疑作答</td><td>0</td><td>本次不计积分，不影响通过结果</td></tr>
+      </tbody>
+    </table>
+    <h4>兑换</h4>
+    <table>
+      <thead><tr><th style="width:190px">项目</th><th style="width:110px">所需积分</th><th>规则</th></tr></thead>
+      <tbody>
+        <tr><td>额外使用时长 10 分钟</td><td>50</td><td>需家长审批；每个学习日最多 2 次；不计入每日上限之外？<span class="tag tbd">见下</span></td></tr>
+        <tr><td>徽章展示位</td><td>0</td><td>达成即展示，无需消耗</td></tr>
+        <tr><td>主题皮肤（P1）</td><td>100</td><td>仅改变外观，不影响规则</td></tr>
+      </tbody>
+    </table>
+    <p>兑换得到的额外时长计入当日使用总量，但可突破家长设定的每日上限最多 20 分钟；超出部分需家长单独授权 <span class="tag tbd">假设</span>。</p>
+    <h4>成就</h4>
+    <table>
+      <thead><tr><th style="width:170px">成就</th><th>达成条件</th><th style="width:90px">奖励</th></tr></thead>
+      <tbody>
+        <tr><td>初次通关</td><td>首次通过解锁任务</td><td>+5 积分</td></tr>
+        <tr><td>满分学者</td><td>单次任务得分 100</td><td>+10 积分</td></tr>
+        <tr><td>三日连击</td><td>连续 3 个学习日打卡</td><td>徽章 + 里程碑积分</td></tr>
+        <tr><td>七日不辍</td><td>连续 7 个学习日打卡</td><td>徽章 + 里程碑积分</td></tr>
+        <tr><td>月度学者</td><td>连续 30 个学习日打卡</td><td>徽章 + 里程碑积分</td></tr>
+        <tr><td>百题斩</td><td>累计答对 100 题</td><td>+20 积分</td></tr>
+        <tr><td>数理高手</td><td>数学类累计答对 50 题</td><td>+15 积分</td></tr>
+        <tr><td>稳扎稳打</td><td>连续 10 次通过，无作废与可疑标记</td><td>+20 积分</td></tr>
+      </tbody>
+    </table>
+    <h4>打卡</h4>
+    <ul>
+      <li>定义：一个学习日内至少一次通过解锁任务即打卡；家长授权、作废、未通过均不算。</li>
+      <li>连续天数跨学习日累计，断签次日归零并从 1 重新计；不提供补签（P1）。</li>
+      <li>打卡日历展示最近 30 天；学生端与家长端看到同一份数据。</li>
+    </ul>
+    <h4>防刷</h4>
+    <ul>
+      <li>同一学习日超过 3 次通过不再计积分，但仍可获得使用时长。</li>
+      <li>极速作答、切后台异常的任务不计积分。</li>
+      <li>积分规则数值由系统统一维护，家长不可修改，只能发放鼓励积分。</li>
+      <li>积分永久有效 <span class="tag tbd">假设</span>；兑换审批拒绝时积分原路退回。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="dhead"><b>DEMO · FR-08 激励中心</b><span>打卡日历 / 积分 / 成就</span></div>
+      <p class="dnote">演示数据：连续打卡 6 天，已获 4 个成就；第 7 天为今日待完成。</p>
+      <div class="phone" style="height:520px">
+        <div class="pbar"><span>21:15</span><span>激励中心</span><span>82%</span></div>
+        <div class="pbody">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; margin:10px 0 4px">
+            <div><div style="font-size:11px;color:#8a877f">我的积分</div><div style="font-size:28px;font-weight:800;color:#1f6b58;line-height:1.2">186</div></div>
+            <div style="font-size:11.5px;color:#6d6b64;text-align:right">连续打卡<br><b style="font-size:15px;color:#232320">6 天</b></div>
+          </div>
+          <div style="font-size:11px;color:#8a877f;margin-top:12px">最近 14 天</div>
+          <div class="streak">
+            <div class="d on"><span>一</span><span>●</span></div><div class="d on"><span>二</span><span>●</span></div><div class="d on"><span>三</span><span>●</span></div><div class="d on"><span>四</span><span>●</span></div><div class="d on"><span>五</span><span>●</span></div><div class="d on"><span>六</span><span>●</span></div><div class="d today"><span>日</span><span>今</span></div>
+            <div class="d"><span>一</span><span></span></div><div class="d"><span>二</span><span></span></div><div class="d"><span>三</span><span></span></div><div class="d"><span>四</span><span></span></div><div class="d"><span>五</span><span></span></div><div class="d"><span>六</span><span></span></div><div class="d"><span>日</span><span></span></div>
+          </div>
+          <div style="font-size:11px;color:#8a877f;margin-top:14px">成就</div>
+          <div class="badges">
+            <div class="badge on"><span class="ico">◆</span>初次通关</div>
+            <div class="badge on"><span class="ico">★</span>满分学者</div>
+            <div class="badge on"><span class="ico">▲</span>三日连击</div>
+            <div class="badge on"><span class="ico">✦</span>百题斩</div>
+            <div class="badge"><span class="ico">◆</span>七日不辍</div>
+            <div class="badge"><span class="ico">◆</span>月度学者</div>
+            <div class="badge"><span class="ico">◆</span>数理高手</div>
+            <div class="badge"><span class="ico">◆</span>稳扎稳打</div>
+          </div>
+          <div style="background:#f6f4ee;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#55524b;margin-top:12px">
+            再连续打卡 1 天，解锁「七日不辍」并获 15 积分。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FR-09 -->
+    <h3 id="fr09">FR-09 记录与报告</h3>
+    <p><strong>目的：</strong>让家长能核对“规则是否被遵守、孩子卡在哪里、题库是否够用”，而不是只看到一个开关。</p>
+    <h4>解锁任务记录字段</h4>
+    <table>
+      <thead><tr><th style="width:150px">字段</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>时间</td><td>发起、开始答题、交卷、开始使用、结束</td></tr>
+        <tr><td>策略快照</td><td>题量、时长、门槛、授予时长、科目、难度比例、是否自动适配</td></tr>
+        <tr><td>题目清单</td><td>题目编号、科目、年级、难度、作答选项、是否正确</td></tr>
+        <tr><td>结果</td><td>得分、答对数、用时、是否通过、是否超时、是否作废、可疑标记</td></tr>
+        <tr><td>授予与消耗</td><td>授予时长、实际使用时长、是否家长授权、是否兑换</td></tr>
+        <tr><td>异常</td><td>异常类型、等级、处置结果</td></tr>
+      </tbody>
+    </table>
+    <h4>家长端展示</h4>
+    <ul>
+      <li>今日概览：是否已通过、剩余额度、当前状态、最近一次异常。</li>
+      <li>明细：按日期倒序，可展开查看逐题作答与解析；最近 30 天可直接查看，更早仅汇总 <span class="tag tbd">假设</span>。</li>
+      <li>周报：每周一 08:00 生成，包含通过率、平均分、各科目正确率、打卡天数、使用时长、异常次数、题库缺口与建议。</li>
+      <li>学生端历史：本人最近 30 天任务与积分明细，不含家长备注。</li>
+    </ul>
+    <h4>异常</h4>
+    <ul>
+      <li>无记录：展示空态与“如何完成第一次解锁”的说明，不显示伪造示例数据。</li>
+      <li>记录加载失败：保留上次缓存并标注时间，避免家长误判为“没有异常”。</li>
+    </ul>
+
+    <!-- FR-10 -->
+    <h3 id="fr10">FR-10 通知与告警</h3>
+    <table>
+      <thead><tr><th style="width:170px">事件</th><th style="width:90px">接收人</th><th style="width:110px">时机</th><th>规则</th></tr></thead>
+      <tbody>
+        <tr><td>使用剩余 5 分钟 / 1 分钟</td><td>学生</td><td>会话内</td><td>不遮挡操作，可被忽略</td></tr>
+        <tr><td>使用到期</td><td>学生</td><td>到期时</td><td>强提醒 + 返回锁屏</td></tr>
+        <tr><td>连续打卡达成 / 成就解锁</td><td>学生</td><td>结果页后</td><td>可关闭</td></tr>
+        <tr><td>权限缺失或异常（二级及以上）</td><td>家长</td><td>即时</td><td>不可关闭，家长端保留未读红点</td></tr>
+        <tr><td>题库不足 / 题量降级</td><td>家长</td><td>组卷时及每日汇总</td><td>同类每日最多 1 条</td></tr>
+        <tr><td>积分兑换申请</td><td>家长</td><td>学生提交时</td><td>需审批，24 小时未处理自动失效并退回积分 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>设备离线超 1 小时</td><td>家长</td><td>检测到后</td><td>合并为一条，恢复后自动更新</td></tr>
+        <tr><td>周报</td><td>家长</td><td>每周一 08:00</td><td>可关闭</td></tr>
+        <tr><td>试用到期前 24 小时</td><td>家长</td><td>到期前 24 小时</td><td>不可关闭，附开通与视频入口</td></tr>
+        <tr><td>会员到期前 3 天 / 1 天</td><td>家长</td><td>到期前</td><td>不可关闭</td></tr>
+        <tr><td>宽限期结束、管控已暂停</td><td>家长</td><td>宽限结束当天</td><td>不可关闭，附一键恢复入口</td></tr>
+        <tr><td>支付到账 / 权益生效</td><td>家长</td><td>支付成功后</td><td>可关闭</td></tr>
+      </tbody>
+    </table>
+    <p>所有告警只包含规则执行所需信息（类型、时间、处置），不包含学生作答内容以外的应用数据。</p>
+
+    <!-- FR-11 -->
+    <h3 id="fr11">FR-11 微信登录与家长账号</h3>
+    <p><strong>目的：</strong>降低家长的注册与登录成本，并让订单、权益、家庭数据绑定到唯一账号，避免“换了手机找不到订单”。</p>
+    <p><strong>入口：</strong>家长端启动页；P-01 登录与创建家庭。</p>
+    <h4>规则</h4>
+    <table>
+      <thead><tr><th style="width:150px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>登录方式</td><td>微信一键登录为 P0；授权仅获取 openid / unionid，昵称与头像可选且可拒绝，拒绝不影响登录</td></tr>
+        <tr><td>手机号绑定</td><td>首次登录必须绑定手机号，用于订单找回、支付风控与客服；更换手机号需短信验证</td></tr>
+        <tr><td>账号与家庭</td><td>一个微信账号对应一个家长账号与一个家庭；同一家庭的多家长协作见 P1</td></tr>
+        <tr><td>新设备登录</td><td>同一微信在新设备登录需短信验证；验证后可选择“下线其他设备”，避免账号被孩子冒用</td></tr>
+        <tr><td>学生端</td><td>同一 App 的家长身份支持微信登录；学生身份不提供微信登录、身份切换与支付入口，学生身份由设备绑定关系确定</td></tr>
+        <tr><td>注销</td><td>存在生效权益、退款中或未完成订单时不可注销；无上述情况需二次确认，并明确告知权益作废且不退款</td></tr>
+      </tbody>
+    </table>
+    <h4>异常</h4>
+    <ul>
+      <li>微信授权取消或失败：停留在登录页并提示重试，不创建半成品账号。</li>
+      <li>手机号已被其他账号绑定：提示更换手机号或通过客服申诉，不自动合并账号与订单。</li>
+      <li>账号被风控冻结：展示客服入口，冻结期间不可购买、不可解绑。</li>
+    </ul>
+
+    <!-- FR-12 -->
+    <h3 id="fr12">FR-12 会员权益与套餐</h3>
+    <p><strong>目的：</strong>明确“哪些能力需要付费、付多久、到期后发生什么”，让家长在购买前就能看懂权益边界。</p>
+    <h4>套餐与价格</h4>
+    <table>
+      <thead><tr><th style="width:110px">套餐</th><th style="width:100px">价格</th><th style="width:120px">有效期</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>月度</td><td>¥9</td><td>30 天</td><td>到期可续费；自动续费可选，默认关闭</td></tr>
+        <tr><td>年度</td><td>¥99</td><td>365 天</td><td>折合约 ¥8.25 / 月；自动续费可选，默认关闭</td></tr>
+        <tr><td>永久</td><td>¥199</td><td>产品运营期内</td><td>一次购买不再续费；不参与升级与二次退款 <span class="tag tbd">表述待法务确认</span></td></tr>
+      </tbody>
+    </table>
+    <p>价格含税，最终以支付页展示为准；价格调整仅影响新订单，已购权益不受影响。</p>
+
+    <h4>试用</h4>
+    <ul>
+      <li>新用户首台设备配对成功后自动开始 72 小时全功能试用，不扣费、不自动续费。</li>
+      <li>每个家庭仅一次；按微信 unionid、绑定手机号、设备标识三项任一命中已试用记录即不再发放。</li>
+      <li>试用到期前 24 小时提醒；试用结束不进入宽限期。</li>
+    </ul>
+
+    <h4>权益矩阵</h4>
+    <table>
+      <thead><tr><th style="width:250px">能力</th><th>无有效权益</th><th>试用 / 视频 / 会员 / 宽限期</th></tr></thead>
+      <tbody>
+        <tr><td>微信登录、创建家庭、绑定设备</td><td>可用</td><td>可用</td></tr>
+        <tr><td>查看、编辑、预览题库与策略</td><td>可用</td><td>可用</td></tr>
+        <tr><td>查看历史记录与周报</td><td>可用（仅历史）</td><td>可用（含新增）</td></tr>
+        <tr><td>启用强制管控、学生端答题解锁</td><td>不可</td><td>可用</td></tr>
+        <tr><td>新增解锁记录、告警、积分与打卡</td><td>不可</td><td>可用</td></tr>
+        <tr><td>购买会员、观看激励视频</td><td>可用</td><td>可用（永久会员无视频入口）</td></tr>
+        <tr><td>学生端广告与购买入口</td><td>无</td><td>无</td></tr>
+      </tbody>
+    </table>
+    <p>权益按家庭计费，覆盖家庭下已绑定的全部学生设备（上限见 FR-01），不按设备数量单独收费。</p>
+
+    <h4>到期与宽限</h4>
+    <ul>
+      <li>到期前 3 天与 1 天各提醒一次；会员中心展示到期时间与续费入口。</li>
+      <li>月度 / 年度套餐到期后进入 7 天宽限期，管控继续执行，家长端明确标注“还有 x 天停止管控”。</li>
+      <li>宽限期结束仍无权益：停止管控，学生端解除锁屏；题库、策略、记录全部保留，家长开通后 10 秒内恢复，无需重新配对。</li>
+      <li>永久会员无到期，不展示续费与视频入口。</li>
+    </ul>
+
+    <div class="demo">
+      <div class="dhead"><b>DEMO · FR-12 / FR-14 会员中心</b><span>试用到期 → 看视频领 1 天 → 购买年度会员</span></div>
+      <p class="dnote">演示：当前为试用最后 1 天；点“看视频领 1 天”模拟完播后叠加 1 天；点套餐可查看订单确认与支付方式。</p>
+      <div class="phone" style="height:568px">
+        <div class="pbar"><span>21:16</span><span>会员中心</span><span>82%</span></div>
+        <div class="pbody" id="vipStage"></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>商业风险（产品判断）：</strong>“每次看视频得 1 天、累计不设上限”实质上提供了永久的免费路径，长期看会让付费转化接近 0，并让付费用户转向看广告。按当前需求保留该机制，但必须监控视频权益用户占比、付费转化率与广告收益/成本，保留可配置的奖励额度和频控开关，以便后续调整。另：¥199 永久套餐叠加无限免费路径后，会进一步压缩收入，建议先小范围验证定价。
+    </div>
+
+    <!-- FR-13 -->
+    <h3 id="fr13">FR-13 支付与订单</h3>
+    <p><strong>目的：</strong>让家长在 3 步内完成购买，并保证“钱到了、权益一定到、不到可自查”。</p>
+    <h4>支付渠道</h4>
+    <table>
+      <thead><tr><th style="width:150px">平台</th><th>可用渠道</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>Android 家长端</td><td>微信支付、支付宝</td><td>拉起对应 App 或 H5 收银台；支付结果以服务端回调为准</td></tr>
+        <tr><td>iOS 家长端</td><td>Apple 内购</td><td>受 App Store 虚拟服务规则限制，不引导外部支付；价格档位需映射 <span class="tag tbd">待定</span></td></tr>
+        <tr><td>学生端</td><td>无</td><td>不展示价格、不提供任何支付入口</td></tr>
+      </tbody>
+    </table>
+    <h4>购买流程</h4>
+    <ol>
+      <li>会员中心选择套餐，展示价格、有效期、到期时间与权益范围。</li>
+      <li>确认订单页展示金额、支付方式、自动续费开关（默认关闭，需主动勾选）。</li>
+      <li>拉起微信支付或支付宝完成付款；返回后展示“支付处理中”。</li>
+      <li>服务端收到支付回调并校验通过后发放权益，页面在 5 秒内更新为“已生效”并展示到期时间。</li>
+    </ol>
+    <h4>订单状态与规则</h4>
+    <table>
+      <thead><tr><th style="width:110px">状态</th><th>进入条件</th><th>允许操作</th><th>超时 / 异常</th></tr></thead>
+      <tbody>
+        <tr><td>待支付</td><td>创建订单</td><td>继续支付、取消</td><td>30 分钟未支付自动关闭</td></tr>
+        <tr><td>已支付</td><td>支付回调校验通过</td><td>查看权益、申请退款</td><td>5 秒内未发放权益则自动补发</td></tr>
+        <tr><td>已关闭</td><td>超时或用户取消</td><td>重新下单</td><td>不产生扣款</td></tr>
+        <tr><td>退款中</td><td>提交退款申请并通过初审</td><td>查看进度</td><td>3 个工作日内完成 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>已退款</td><td>退款到账</td><td>重新购买</td><td>权益立即终止</td></tr>
+      </tbody>
+    </table>
+    <h4>支付规则</h4>
+    <ul>
+      <li><strong>幂等：</strong>同一订单重复回调只发放一次权益；重复提交支付在 5 分钟内拦截并提示“已有处理中订单”。</li>
+      <li><strong>到账兜底：</strong>支付成功 60 秒仍未到账，系统自动补发；家长也可在会员中心点击“刷新权益”。</li>
+      <li><strong>自动续费：</strong>默认关闭，购买页需主动勾选；扣款前 5 天提醒；可随时关闭，关闭后当期可用至到期；连续 3 天扣款失败则到期失效 <span class="tag tbd">假设</span>。</li>
+      <li><strong>升级：</strong>月 → 年、年 → 永久可补差价；原套餐剩余价值按日均价折算抵扣，抵扣金额不超过新套餐价格；新套餐从支付成功时刻起算。</li>
+      <li><strong>退款：</strong>首次购买 7 天内且实际管控使用不超过 3 天，可申请全额退款；超出按日均价扣除已用天数；永久套餐仅支持购买后 7 天内退款；退款成功权益立即终止，设备若正在管控中则同步解除并告知家长。</li>
+      <li><strong>支付中断：</strong>返回订单页展示“待支付”，已扣款未回调时由对账任务校正，不重复扣款。</li>
+    </ul>
+    <h4>异常</h4>
+    <ul>
+      <li>支付被风控拦截：展示失败原因与客服入口，不创建已支付订单。</li>
+      <li>退款被拒：展示拒绝原因，权益保持有效。</li>
+      <li>同一家庭重复购买同类套餐：提示当前已有生效权益，引导升级而非重复购买。</li>
+    </ul>
+
+    <!-- FR-14 -->
+    <h3 id="fr14">FR-14 激励视频免费时长</h3>
+    <p><strong>目的：</strong>给不愿付费的家长一条可控的免费路径，同时产生广告收益；该入口只存在于家长端。</p>
+    <h4>规则</h4>
+    <table>
+      <thead><tr><th style="width:170px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>入口</td><td>P-14 会员中心“看视频领 1 天”；仅在当前无生效付费订阅且非永久会员时展示</td></tr>
+        <tr><td>奖励</td><td>完整观看 1 次激励视频发放 24 小时权益；可连续观看，累计天数不设上限</td></tr>
+        <tr><td>叠加</td><td>按观看完成时间顺序叠加；若正在试用，奖励从试用结束后开始消耗</td></tr>
+        <tr><td>完播判定</td><td>以广告平台回调为准，最短观看 15 秒；中途退出、跳过、无广告填充均不发放</td></tr>
+        <tr><td>幂等</td><td>同一观看请求 ID 只发放一次；并发请求以首次完播为准</td></tr>
+        <tr><td>风控</td><td>模拟器、自动化点击、异常高频请求判定无效，不发放并记录，不扣除已有权益</td></tr>
+        <tr><td>学生端</td><td>无视频入口、无广告、无剩余权益展示；学生看不到“家长在看广告换时长”</td></tr>
+        <tr><td>展示</td><td>会员中心显示“视频权益剩余 x 天 x 小时”，并说明到期时间</td></tr>
+      </tbody>
+    </table>
+    <h4>异常</h4>
+    <ul>
+      <li>无广告填充：提示“暂时没有可播放的视频，请稍后再试”，不影响其他权益。</li>
+      <li>观看中断：不发放，可重新观看；连续 3 次中断提示检查网络。</li>
+      <li>权益发放失败：自动补偿一次；仍失败则展示客服入口并保留观看记录。</li>
+    </ul>
+    <p class="note">激励视频素材需经广告平台审核，并排除不适宜未成年人的内容；家长观看时学生可能在旁，素材标准按未成年人可观看处理。<span class="tag tbd">待定</span></p>
+
+    <!-- FR-15 -->
+    <h3 id="fr15">FR-15 统一 App 与身份选择</h3>
+    <p><strong>目的：</strong>用同一个安装包覆盖家长与学生两类使用者，避免家长装两个应用、学生入口藏得过深；同时保证“选择家长身份”不会被学生用来解除管控。</p>
+    <p><strong>入口：</strong>U-00 启动页身份选择；已绑定学生身份的设备直接进入学生模式。</p>
+    <h4>规则</h4>
+    <table>
+      <thead><tr><th style="width:160px">规则</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>单一安装包</td><td>Android 与 iOS 均只上架一个 App 条目，包含家长身份与学生身份两套界面；不做“家长版 / 学生版”两个应用</td></tr>
+        <tr><td>身份选择</td><td>首次启动展示两个入口：“我是家长”“我是学生”；不默认选中任何一方</td></tr>
+        <tr><td>家长身份</td><td>选择后进入微信登录 → 绑定手机号 → 创建家庭或进入已有家庭；可购买会员、管理策略与设备</td></tr>
+        <tr><td>学生身份</td><td>选择后输入家长生成的配对码加入家庭；无需登录、不展示价格、订单与购买入口</td></tr>
+        <tr><td>已绑定设备</td><td>启动后直接进入学生模式并自动锁定，不再出现身份选择页；不提供“切换为家长”的可见入口</td></tr>
+        <tr><td>家长身份校验</td><td>在已绑定设备上选择“我是家长”，必须微信登录且账号为本家庭主家长，并完成二次验证；任一不满足即拒绝进入</td></tr>
+        <tr><td>一台设备一个身份</td><td>家长把自己正在使用的手机绑定为某家庭学生设备时，需二次确认“本机将进入学生模式并被管控”，绑定后不再展示家长功能</td></tr>
+        <tr><td>账号与家庭</td><td>一个微信账号对应一个家长账号与一个家庭；学生身份不注册账号，绑定关系即身份</td></tr>
+        <tr><td>重新安装</td><td>Android 由设备管理员阻止卸载；iOS 卸载重装后必须重新配对，期间管控失效并通知家长，重装后选择“我是家长”同样需通过家庭归属校验</td></tr>
+        <tr><td>平台能力</td><td>见下方平台能力表；不因“同一个 App”而承诺两端拥有相同的管控强度</td></tr>
+      </tbody>
+    </table>
+
+    <h4>平台与身份能力</h4>
+    <table>
+      <thead><tr><th style="width:120px">平台</th><th>家长身份</th><th>学生身份</th></tr></thead>
+      <tbody>
+        <tr><td>Android</td><td>完整功能；会员购买支持微信支付与支付宝</td><td>完整管控：设备管理员、无障碍、使用统计等权限齐全时进入强制模式；缺权限时降级为提醒模式</td></tr>
+        <tr><td>iOS</td><td>完整功能；虚拟服务按 App Store 规则使用内购，不引导外部支付 <span class="tag tbd">待定</span></td><td>支持学生模式与答题解锁；系统级强制能力受限，基于“屏幕使用时间”授权与 App 内拦截、提醒执行，无法覆盖系统限制的部分在家长端明确标注 <span class="tag tbd">待定</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="demo">
+      <div class="dhead"><b>DEMO · FR-15 身份选择</b><span>同一个 App：家长微信登录 / 学生配对码</span></div>
+      <p class="dnote">演示三屏：身份选择 → 家长微信登录 → 家庭首页；或身份选择 → 学生输入配对码 → 学生模式。</p>
+      <div class="phone" style="height:540px">
+        <div class="pbar"><span>21:18</span><span>学习解锁</span><span>82%</span></div>
+        <div class="pbody" id="idStage"></div>
+      </div>
+    </div>
+
+    <h4>异常</h4>
+    <ul>
+      <li>已绑定设备上登录的微信不是本家庭主家长：提示“该设备已绑定其他家庭，请联系家长”，不展示解绑入口，记录一次身份尝试。</li>
+      <li>设备已被未知家庭绑定：家长可通过“设备归属申诉”提交设备与监护关系证明，审核通过后强制解绑 <span class="tag tbd">待定</span>。</li>
+      <li>学生尝试以家长身份自建家庭并绑定本机：被设备归属校验拦截（见 FR-07），并产生二级告警。</li>
+      <li>同一设备重复绑定：提示先由原家庭解绑，不允许覆盖绑定。</li>
+      <li>身份选择页网络异常：家长入口提示重试；学生入口可离线进入已绑定设备的学生模式。</li>
+    </ul>
+
+    <h2 id="s8"><span class="idx">08</span>页面结构与信息架构</h2>
+
+    <h3>8.1 公共入口（同一 App）</h3>
+    <table>
+      <thead><tr><th style="width:80px">页面</th><th style="width:180px">名称</th><th>职责</th><th style="width:120px">主要跳转</th></tr></thead>
+      <tbody>
+        <tr><td>U-00</td><td>身份选择</td><td>启动页展示“我是家长 / 我是学生”，说明两种身份的用途与差异；不默认选中</td><td>P-01 / S-01</td></tr>
+        <tr><td>U-01</td><td>身份说明与隐私</td><td>说明家长需微信登录、学生无需登录、数据采集范围与管控后果</td><td>U-00</td></tr>
+      </tbody>
+    </table>
+    <p>已绑定学生身份的设备启动后跳过 U-00 直接进入 S-03；家长设备每次启动默认进入上次身份。</p>
+
+    <h3>8.2 家长身份</h3>
+    <div class="layers">
+      <div class="layer"><div class="lbl">首页</div><div class="body">孩子当前状态 · 今日额度 · 最近一次结果 · 待处理告警 · 快捷操作（临时授权 / 加题 / 改策略）</div></div>
+      <div class="layer"><div class="lbl">题库</div><div class="body">列表（筛选 / 搜索）· 题目编辑 · 导入向导 · 校验报告 · 归档</div></div>
+      <div class="layer"><div class="lbl">策略</div><div class="body">模板选择 · 参数配置 · 实时摘要 · 保存生效 · 修改历史</div></div>
+      <div class="layer"><div class="lbl">记录</div><div class="body">解锁记录 · 答题详情 · 周报 · 题库健康</div></div>
+      <div class="layer"><div class="lbl">激励</div><div class="body">积分规则说明 · 兑换审批 · 鼓励积分 · 打卡视图</div></div>
+      <div class="layer"><div class="lbl">设备与安全</div><div class="body">绑定状态 · 权限检查 · 告警列表 · 临时授权 · 解绑 / 换机</div></div>
+      <div class="layer"><div class="lbl">会员</div><div class="body">权益状态与到期 · 套餐与价格 · 激励视频 · 订单与退款 · 自动续费</div></div>
+      <div class="layer"><div class="lbl">设置</div><div class="body">家庭信息 · 学生档案 · 通知偏好 · 隐私与注销</div></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:80px">页面</th><th style="width:180px">名称</th><th>职责</th><th style="width:120px">主要跳转</th></tr></thead>
+      <tbody>
+        <tr><td>P-01</td><td>微信登录与创建家庭</td><td>微信授权、手机号绑定、家庭创建、角色确认</td><td>P-02 / P-04 / P-14</td></tr>
+        <tr><td>P-02</td><td>首页概览</td><td>孩子状态、额度、告警、快捷操作</td><td>P-05 / P-08 / P-09 / P-12</td></tr>
+        <tr><td>P-03</td><td>孩子与设备</td><td>学生档案、设备列表、模式与权限状态</td><td>P-04 / P-08</td></tr>
+        <tr><td>P-04</td><td>配对向导</td><td>生成配对码、等待设备、权限结果</td><td>P-03 / P-08</td></tr>
+        <tr><td>P-05</td><td>题库列表</td><td>筛选、搜索、批量发布/归档</td><td>P-06 / P-07</td></tr>
+        <tr><td>P-06</td><td>题目编辑</td><td>新增/编辑题目、预览、发布</td><td>P-05</td></tr>
+        <tr><td>P-07</td><td>导入与校验</td><td>模板下载、上传、错误报告、批量发布</td><td>P-05</td></tr>
+        <tr><td>P-08</td><td>策略配置</td><td>参数、校验、预览、保存、修改历史</td><td>P-02 / P-05</td></tr>
+        <tr><td>P-09</td><td>解锁记录</td><td>按日查看结果、异常、额度消耗</td><td>P-10</td></tr>
+        <tr><td>P-10</td><td>答题详情</td><td>逐题快照、得分构成、解析、异常</td><td>P-09</td></tr>
+        <tr><td>P-11</td><td>激励与审批</td><td>积分规则、兑换审批、鼓励积分、打卡</td><td>P-02 / P-09</td></tr>
+        <tr><td>P-12</td><td>安全与告警</td><td>权限巡检、告警列表、临时授权、换机解绑</td><td>P-03</td></tr>
+        <tr><td>P-13</td><td>设置与隐私</td><td>通知偏好、隐私说明、注销</td><td>—</td></tr>
+        <tr><td>P-14</td><td>会员中心</td><td>权益状态与到期、套餐入口、激励视频、恢复管控</td><td>P-15 / P-16</td></tr>
+        <tr><td>P-15</td><td>套餐与支付</td><td>套餐对比、订单确认、支付方式、自动续费勾选</td><td>P-16</td></tr>
+        <tr><td>P-16</td><td>订单与权益记录</td><td>订单状态、退款申请、权益流水、视频奖励记录</td><td>P-14</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.3 学生身份</h3>
+    <div class="layers">
+      <div class="layer"><div class="lbl">锁屏与答题</div><div class="body">S-03 锁屏入口 · S-04 答题 · S-05 结果 · S-06 使用中悬浮计时 · S-07 学习模式</div></div>
+      <div class="layer"><div class="lbl">激励</div><div class="body">S-08 激励中心（积分 / 打卡 / 成就 / 兑换）</div></div>
+      <div class="layer"><div class="lbl">记录</div><div class="body">S-09 我的记录（最近 30 天、错题解析）</div></div>
+      <div class="layer"><div class="lbl">服务状态</div><div class="body">S-10 管控未启用说明（无价格、无购买入口，仅提示联系家长）</div></div>
+      <div class="layer"><div class="lbl">初始化</div><div class="body">S-01 配对 · S-02 权限引导与说明</div></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:80px">页面</th><th style="width:180px">名称</th><th>职责</th><th style="width:120px">主要跳转</th></tr></thead>
+      <tbody>
+        <tr><td>S-01</td><td>配对</td><td>输入配对码、查看家长与规则摘要</td><td>S-02</td></tr>
+        <tr><td>S-02</td><td>权限引导</td><td>逐项解释权限用途与不授权后果</td><td>S-03</td></tr>
+        <tr><td>S-03</td><td>锁屏答题入口</td><td>规则摘要、剩余次数、开始答题、紧急呼叫</td><td>S-04 / S-07 / S-08</td></tr>
+        <tr><td>S-04</td><td>答题</td><td>倒计时、题目、选项、上一题/下一题、交卷</td><td>S-05</td></tr>
+        <tr><td>S-05</td><td>结果</td><td>得分、门槛、授予时长、解析、重试</td><td>S-06 / S-04 / S-07</td></tr>
+        <tr><td>S-06</td><td>使用中</td><td>剩余时长、到期提醒、结束使用</td><td>S-03</td></tr>
+        <tr><td>S-07</td><td>学习模式</td><td>未通过原因、白名单应用、下次可答时间</td><td>S-03 / S-09</td></tr>
+        <tr><td>S-08</td><td>激励中心</td><td>积分、打卡、成就、兑换申请</td><td>S-03 / S-09</td></tr>
+        <tr><td>S-09</td><td>我的记录</td><td>历史结果、错题解析、积分明细</td><td>S-08</td></tr>
+        <tr><td>S-10</td><td>管控未启用说明</td><td>说明家长尚未开通服务，展示联系家长入口；不展示价格与购买入口</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.4 关键页面结构</h3>
+    <table>
+      <thead><tr><th style="width:130px">页面</th><th>区域与元素</th></tr></thead>
+      <tbody>
+        <tr><td>U-00 身份选择</td><td>顶部：App 名称与一句话价值；中部：两张身份卡片“我是家长 / 我是学生”，分别标注“微信登录，管理孩子的手机使用”“输入配对码，开始答题解锁”；底部：隐私与数据说明、客服入口；不默认选中任何一方；已绑定设备不展示本页</td></tr>
+        <tr><td>S-03 锁屏入口</td><td>顶部：时间与日期；中部：今日任务卡片（题量 / 时长 / 门槛 / 通过后可用时长 / 剩余重试）；底部：开始答题主按钮、紧急呼叫、规则说明；异常时顶部显示家长告警条</td></tr>
+        <tr><td>S-04 答题</td><td>顶部：倒计时 + 题号进度；中部：题干与选项；底部：上一题 / 下一题 / 交卷；右上角隐藏式“离开页面”记录入口（仅记录，不阻止）</td></tr>
+        <tr><td>S-05 结果</td><td>顶部：结果标签（通过 / 未通过 / 作废）；中部：得分与门槛、答对数、用时、授予时长、积分；下部：错题解析折叠列表；底部：主操作 + 次操作</td></tr>
+        <tr><td>S-07 学习模式</td><td>顶部：状态说明“本次未通过，已进入学习模式”；中部：下次可答题时间、白名单应用入口；底部：联系家长、查看解析</td></tr>
+        <tr><td>P-08 策略</td><td>顶部：当前生效策略与最近修改；中部：参数分组（基础 / 时间 / 权限与白名单 / 高级）；右侧或底部：实时摘要（至少答对几题、平均每题秒数、每日额度）；底部：保存并生效</td></tr>
+        <tr><td>P-14 会员中心</td><td>顶部：当前权益状态（试用中 / 视频权益 / 月度 / 年度 / 永久 / 宽限期）与到期时间；中部：套餐卡片（9 元 / 99 元 / 199 元）与“看视频领 1 天”；底部：订单与权益记录入口、自动续费开关；宽限期显示“还有 x 天停止管控”</td></tr>
+        <tr><td>P-15 套餐与支付</td><td>套餐对比（价格、有效期、折合月价）；订单确认（金额、支付方式、自动续费勾选，默认不勾选）；支付后进入“处理中 → 已生效”状态</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s9"><span class="idx">09</span>关键逻辑设计</h2>
+
+    <h3>9.1 判分与门槛</h3>
+    <table>
+      <thead><tr><th style="width:160px">项目</th><th>规则</th></tr></thead>
+      <tbody>
+        <tr><td>单题权重</td><td>等权，总分为 100；P0 单选题答对得 1 题分，答错或未答 0 分；判断题同此</td></tr>
+        <tr><td>得分</td><td>得分 = 向下取整（答对数 ÷ 题量 × 100）</td></tr>
+        <tr><td>达标</td><td>得分 ≥ 分数门槛即通过</td></tr>
+        <tr><td>最少答对数</td><td>向上取整（门槛 × 题量 ÷ 100）；如 5 题 / 80 分 → 至少 4 题；6 题 / 80 分 → 至少 5 题</td></tr>
+        <tr><td>展示</td><td>配置页与学生端摘要统一展示“至少答对 x / n 题”，避免只给百分比导致误解</td></tr>
+        <tr><td>复核</td><td>服务端判分为唯一有效结果；学生端本地计算仅用于即时展示，不一致以服务端为准并记录</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.2 时间与会话</h3>
+    <ul>
+      <li>学习日以本地时间 00:00 重置；跨零点的使用会话按实际分钟分别计入两天。</li>
+      <li>计时与额度以服务端时间为准；设备时间仅用于界面展示，偏移超过 2 分钟触发一级异常。</li>
+      <li>使用时长按分钟向下取整记录；提醒节点为剩余 5 分钟与 1 分钟。</li>
+      <li>答题时长不折算为使用时长，避免学生抢答换取时间。</li>
+      <li>通过后未开始使用，任务 30 分钟内有效；过期需重新答题。</li>
+    </ul>
+
+    <h3>9.3 智能匹配与难度校准</h3>
+    <ul>
+      <li>正确率 = 最近 5 次任务的平均正确率（答对数 ÷ 题量）。</li>
+      <li>连续 2 次 &gt; 90% → 指针上移一档；连续 2 次 &lt; 75% → 下移一档；上下限为偏易与偏难。</li>
+      <li>指针只影响难度配额，不改变题量、答题时长与门槛；家长端可看到当前指针与最近 5 次正确率。</li>
+      <li>家长关闭自动适配后，指针固定为标准，按家长设置的比例组卷。</li>
+      <li>首次使用固定为“偏易”，减少首战挫败。</li>
+    </ul>
+
+    <h3>9.4 策略冲突与优先级</h3>
+    <table>
+      <thead><tr><th style="width:90px">优先级</th><th>规则来源</th><th>冲突时的处理</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>家庭权益有效性</td><td>无有效权益时不执行管控；有权益时按以下顺序执行，权益到期以服务端时间为准</td></tr>
+        <tr><td>1</td><td>系统安全规则（时段外不可用、紧急呼叫可用、权限缺失降级）</td><td>高于家长配置；家长不能关闭紧急呼叫与青少年保护底线</td></tr>
+        <tr><td>2</td><td>家长当前生效策略</td><td>覆盖历史策略；仅对下一次任务生效</td></tr>
+        <tr><td>3</td><td>任务快照</td><td>进行中的任务以快照为准，不被新策略打断</td></tr>
+        <tr><td>4</td><td>家长临时授权</td><td>可越过答题与每日上限，但不能越过系统安全规则</td></tr>
+        <tr><td>5</td><td>积分兑换</td><td>只能扩展使用时长，不能降低门槛或减少题量</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.5 激励计算</h3>
+    <ul>
+      <li>一次任务只结算一次积分，以任务 ID 去重；重试产生新任务，通过后按规则计分。</li>
+      <li>打卡在每日首次通过时判定；同一日多次通过不重复打卡。</li>
+      <li>里程碑积分在连续天数达到 3 / 7 / 30 时各发放一次；断签后重新累计，同一里程碑在同一连续段内不重复发放。</li>
+      <li>家长授权、作废、可疑标记的任务不计积分与打卡，但计入使用时长与异常统计。</li>
+    </ul>
+
+    <h3>9.6 权益判定与消耗顺序</h3>
+    <table>
+      <thead><tr><th style="width:130px">项目</th><th>规则</th></tr></thead>
+      <tbody>
+        <tr><td>判定顺序</td><td>永久 &gt; 订阅生效 &gt; 视频权益 &gt; 试用 &gt; 宽限期 &gt; 无权益</td></tr>
+        <tr><td>管控是否生效</td><td>当前时刻被任一有效权益覆盖即生效；宽限期仅在“已付费套餐到期”后产生，试用结束不产生宽限</td></tr>
+        <tr><td>消耗顺序</td><td>试用 → 视频权益 → 订阅；永久不参与消耗，始终生效</td></tr>
+        <tr><td>叠加</td><td>视频奖励按观看完成时间顺序累加；购买订阅不覆盖已获得的视频权益，订阅结束后继续消耗剩余视频权益</td></tr>
+        <tr><td>视频入口条件</td><td>当前无生效付费订阅且非永久会员时才展示“看视频领 1 天”</td></tr>
+        <tr><td>状态同步</td><td>权益变更后 10 秒内推送到学生端；学生端离线时按最后一次同步的有效期继续执行，最长 72 小时，联网后校正 <span class="tag tbd">假设</span></td></tr>
+        <tr><td>时间基准</td><td>所有到期判定使用服务端时间，设备时间仅用于展示</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.7 支付与权益发放</h3>
+    <ul>
+      <li>订单与权益发放属于同一次业务处理：支付回调验签通过才发放，发放结果写入权益流水，任何权益变化都可追溯。</li>
+      <li>同一订单多次回调只发放一次；同一家庭并发创建相同套餐订单时，只允许一笔进入支付。</li>
+      <li>升级抵扣：剩余价值 = 原套餐实付金额 ÷ 有效期天数 × 剩余天数，抵扣不超过新套餐价格；新套餐从支付成功时刻重新起算。</li>
+      <li>退款成功立即终止对应权益；若设备正在管控中则同步解除，并由家长端推送说明。</li>
+      <li>永久套餐不可再升级、不可二次退款；购买后 7 天内退款按 FR-13 执行。</li>
+      <li>试用与视频权益不可转让、不可折现、不可合并到其他家庭。</li>
+    </ul>
+
+    <h3>9.8 身份判定与防冒充</h3>
+    <table>
+      <thead><tr><th style="width:170px">场景</th><th>判定与处理</th></tr></thead>
+      <tbody>
+        <tr><td>启动身份</td><td>本地保存上一次身份，仅作默认展示；真正进入家长功能仍需微信登录态有效，学生功能以服务端绑定关系为准</td></tr>
+        <tr><td>学生设备选择“我是家长”</td><td>微信登录成功 ≠ 允许进入：必须校验该微信是本家庭主家长，否则停留在提示页并记录一次身份尝试</td></tr>
+        <tr><td>家长身份在校验失败后</td><td>不提供“解除绑定 / 重新配对 / 切换学生”入口，避免学生借失败页操作设备</td></tr>
+        <tr><td>身份缓存</td><td>家长登录态过期后自动回到 U-00；学生绑定态不因家长登录态过期而解除</td></tr>
+        <tr><td>绑定优先级</td><td>设备绑定关系高于本地身份选择：设备已属于某家庭学生身份时，任何本地选择都不能覆盖绑定</td></tr>
+        <tr><td>身份切换审计</td><td>每次选择家长身份、每次登录失败、每次解绑都写入设备操作记录，家长端可查看最近 10 条</td></tr>
+        <tr><td>防卸载与重装</td><td>Android 依赖设备管理员；iOS 以“重装后必须重新配对 + 家长告警”兜底，并明确提示 iOS 能力边界</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s10"><span class="idx">10</span>共享规则、异常与合规</h2>
+
+    <h3>10.1 时间与日历</h3>
+    <ul>
+      <li>“学习日”按本地时间 00:00–23:59 划分，所有每日额度、打卡、积分上限均以此为准。</li>
+      <li>允许时段最多 3 段，跨零点时段（如 22:00–次日 01:00）按两段处理，需家长显式配置。</li>
+      <li>时区变更：以设备当前时区展示，以服务端记录的时间戳结算；跨时区旅行时每日额度按服务端日期计算，家长端注明规则。</li>
+    </ul>
+
+    <h3>10.2 网络与离线</h3>
+    <table>
+      <thead><tr><th style="width:150px">场景</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>发起解锁时离线</td><td>无法组卷，提示检查网络；不进入学习模式，不消耗重试</td></tr>
+        <tr><td>答题中断网</td><td>可继续作答，交卷时暂存；恢复联网后复核并出结果；锁定状态保持</td></tr>
+        <tr><td>使用中断网</td><td>本地继续计时，恢复后以服务端时间校准；离线超出 1 小时通知家长</td></tr>
+        <tr><td>结果长时间待复核</td><td>超过 30 秒未完成，展示“校核中，请稍候”，提供重试与联系家长入口</td></tr>
+      </tbody>
+    </table>
+
+    <h3>10.3 隐私与数据边界</h3>
+    <table>
+      <thead><tr><th style="width:170px">类别</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td>采集</td><td>昵称、年级、答题与积分记录、设备型号与设备标识、管控权限状态、受限应用使用时长</td></tr>
+        <tr><td>不采集</td><td>通讯录、通话记录、短信内容、相册、精确位置、其他应用内内容、聊天内容、生物识别原始数据</td></tr>
+        <tr><td>家长可见</td><td>答题记录、得分、使用时长、异常事件、权限状态；不提供通话与短信内容</td></tr>
+        <tr><td>学生可见</td><td>本人记录、规则说明、数据收集清单与用途；首次使用必须展示</td></tr>
+        <tr><td>同意</td><td>配对时由家长确认监护人身份；学生端二次确认；撤回同意即停止管控并提示家长</td></tr>
+        <tr><td>保留与注销</td><td>明细保留 6 个月、汇总 12 个月 <span class="tag tbd">假设</span>；注销后 30 天内可撤销，到期删除 <span class="tag tbd">假设</span></td></tr>
+      </tbody>
+    </table>
+    <p class="note">未成年人个人信息处理、设备管控类权限的商店审核与告知义务需法务确认，本文不构成合规结论。<span class="tag tbd">待定</span></p>
+
+    <h3>10.4 用户可见的能力边界</h3>
+    <ul>
+      <li>产品必须在家长端持续展示“强制模式 / 提醒模式”及原因，不得在提醒模式下宣称规则不可绕过。</li>
+      <li>iOS 端同样支持家长身份与学生身份，但系统级强制能力受限；家长端必须标注当前为“强制模式 / 提醒模式”，不能覆盖系统限制的功能不提供虚假开关。</li>
+      <li>同一 App 内，学生身份不出现价格、订单、购买与广告入口；家长身份才具备支付能力。</li>
+      <li>紧急呼叫、家长联系方式、时间与电量等基础系统能力在任何模式下保持可用。</li>
+    </ul>
+
+    <h3>10.5 支付与订阅合规</h3>
+    <table>
+      <thead><tr><th style="width:160px">项目</th><th>要求</th></tr></thead>
+      <tbody>
+        <tr><td>付费主体</td><td>仅家长账号可购买；支付前需完成平台实名。学生端不展示价格、不提供支付入口</td></tr>
+        <tr><td>购买前告知</td><td>价格、有效期、权益范围、自动续费状态、退款规则在支付确认页同时展示，不做折叠隐藏</td></tr>
+        <tr><td>自动续费</td><td>默认关闭，需家长主动勾选；扣款前 5 天通知；可随时关闭；关闭后当期权益可用至到期 <span class="tag tbd">以平台规则为准</span></td></tr>
+        <tr><td>“永久”表述</td><td>说明为“产品运营期内有效”，不承诺无限期服务；停服前需提前通知并给出补偿方案 <span class="tag tbd">待法务确认</span></td></tr>
+        <tr><td>iOS 支付</td><td>虚拟服务按 App Store 规则使用内购，不引导外部支付；价格档位与安卓保持一致的消费者感知 <span class="tag tbd">待定</span></td></tr>
+        <tr><td>未成年人误充值</td><td>提供家长申诉入口，按支付平台与法规流程处理；申诉期间冻结相关权益变动 <span class="tag tbd">待定</span></td></tr>
+        <tr><td>广告</td><td>仅家长端激励视频；素材需排除不适宜未成年人内容；不根据学生数据做广告定向</td></tr>
+        <tr><td>发票</td><td>P1，当前提供支付凭证与订单号供家长向平台申请</td></tr>
+      </tbody>
+    </table>
+    <p class="note">订阅价格、自动续费、退款与“永久”表述涉及消费者权益与平台政策，需在发布前完成法务与商店审核确认，本文不构成合规结论。<span class="tag tbd">待定</span></p>
+
+    <h2 id="s11"><span class="idx">11</span>待确认问题</h2>
+    <table>
+      <thead><tr><th style="width:70px">编号</th><th>问题</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td>Q1</td><td>iOS 学生身份的系统级强制管控如何实现（屏幕使用时间 / Family Controls 授权与商店审核）；若能力不足，能否接受以“提醒模式”首发 <span class="tag tbd">待定</span></td><td>决定 iOS 学生端能否与 Android 对齐，以及家长预期管理</td></tr>
+        <tr><td>Q2</td><td>内置示例题库的来源、版权与更新机制 <span class="tag tbd">待定</span></td><td>决定新用户能否在没有自建题库时完成首次解锁</td></tr>
+        <tr><td>Q3</td><td>设备管理员、无障碍等权限的商店审核通过与家长接受度 <span class="tag tbd">待定</span></td><td>决定强制模式能否作为默认路径</td></tr>
+        <tr><td>Q4</td><td>家庭题库容量上限，以及容量与会员套餐是否挂钩 <span class="tag tbd">待定</span></td><td>影响题库容量提示、导入上限与套餐权益描述</td></tr>
+        <tr><td>Q5</td><td>是否提供“复习 20 分钟后补考”的软恢复路径 <span class="tag tbd">待定</span></td><td>影响未通过后的恢复路径与防绕过复杂度</td></tr>
+        <tr><td>Q6</td><td>iOS 家长端的支付渠道与价格档位如何与 9 / 99 / 199 对齐 <span class="tag tbd">待定</span></td><td>影响 iOS 是否首发、是否出现同产品不同价</td></tr>
+        <tr><td>Q7</td><td>¥199 永久套餐的服务期承诺与停止运营时的补偿方式 <span class="tag tbd">待定</span></td><td>影响定价可持续性与法律表述</td></tr>
+        <tr><td>Q8</td><td>激励视频是否最终保持“不限制累计天数” <span class="tag tbd">待定</span></td><td>当前规则实质提供永久免费路径，直接影响付费转化与广告收益模型</td></tr>
+        <tr><td>Q9</td><td>试用去重维度与防刷标准（微信、手机号、设备标识的组合） <span class="tag tbd">待定</span></td><td>影响试用成本与“换号反复试用”的风险</td></tr>
+        <tr><td>Q10</td><td>学生身份是否需要绑定微信账号（当前设计不绑定，仅按设备配对） <span class="tag tbd">待定</span></td><td>影响换机恢复、跨设备记录与“同一个账号”的具体含义</td></tr>
+        <tr><td>Q11</td><td>设备被未知家庭绑定时，家长“设备归属申诉”的证明标准与审核流程 <span class="tag tbd">待定</span></td><td>影响解绑安全性与客服成本</td></tr>
+      </tbody>
+    </table>
+
+    <footer>
+      学习解锁 · 产品需求文档 v1.2 · 本文描述产品行为与业务规则，不包含技术架构、接口与数据结构设计。标注为“假设”的取值需在评审中确认。v1.2 起为单一 App、家长 / 学生双身份：家长身份微信登录，支持微信支付与支付宝；Android 与 iOS 均可作为孩子或父母使用。
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ================= 策略配置 DEMO ================= */
+function sUpdate(){
+  const n = +document.getElementById('inN').value;
+  const t = +document.getElementById('inT').value;
+  const th = +document.getElementById('inTh').value;
+  const g = +document.getElementById('inG').value;
+  const d = +document.getElementById('inD').value;
+  const r = +document.getElementById('inR').value;
+
+  document.getElementById('vN').textContent = n + ' 题';
+  document.getElementById('vT').textContent = t + ' 分钟';
+  document.getElementById('vTh').textContent = th + ' 分';
+  document.getElementById('vG').textContent = g + ' 分钟';
+  document.getElementById('vD').textContent = d + ' 分钟';
+  document.getElementById('vR').textContent = r + ' 次';
+
+  const need = Math.ceil(th * n / 100);
+  const avg = Math.round(t * 60 / n);
+  const perUse = Math.min(g, d);
+
+  document.getElementById('sPreview').innerHTML =
+    '至少答对 <span class="big">' + need + ' / ' + n + '</span> 题　·　平均每题 <b>' + avg + ' 秒</b><br>' +
+    '通过后可用 <b>' + perUse + ' 分钟</b>，每日上限 ' + d + ' 分钟，最多重试 ' + r + ' 次';
+
+  const warns = [];
+  if (t * 60 / n < 20) warns.push('平均每题不足 20 秒，可能来不及读完题干，建议延长答题时长或减少题量。');
+  if (th === 100 && n > 10) warns.push('门槛 100 分且题量大于 10，连续失败概率较高。');
+  if (g > d) warns.push('单次授予时长已超过每日上限，实际可用将按每日上限截断。');
+  if (n > 10 && th >= 90) warns.push('题量与门槛同时偏高，建议先观察一周通过率再调整。');
+  document.getElementById('sWarn').innerHTML = warns.join('<br>');
+}
+sUpdate();
+
+/* ================= 题库 DEMO ================= */
+const BANK = [
+  {q:'「锲而不舍」中「锲」的意思是？', s:'语文', g:'七年级', d:'中', st:'已发布'},
+  {q:'若 2x + 3 = 11，则 x 的值是？', s:'数学', g:'七年级', d:'易', st:'已发布'},
+  {q:'一个长方形长 6cm、宽 4cm，面积是？', s:'数学', g:'七年级', d:'易', st:'已发布'},
+  {q:'Choose the correct sentence.', s:'英语', g:'七年级', d:'中', st:'已发布'},
+  {q:'「不亦说乎」中「说」的意思是？', s:'语文', g:'七年级', d:'中', st:'已发布'},
+  {q:'物体做匀速直线运动时，速度与时间的关系是？', s:'物理', g:'八年级', d:'难', st:'草稿'},
+  {q:'H₂O 的相对分子质量是多少？', s:'化学', g:'九年级', d:'中', st:'已发布'},
+  {q:'下列属于可再生能源的是？', s:'科学', g:'七年级', d:'易', st:'已归档'}
+];
+let bankSubject = '全部', bankDiff = '全部';
+function bankRender(){
+  const subs = ['全部','语文','数学','英语','物理','化学','科学'];
+  const diffs = ['全部','易','中','难'];
+  document.getElementById('bankFilters').innerHTML =
+    subs.map(s => '<button class="fchip' + (bankSubject===s?' on':'') + '" onclick="bankSet(\'s\',\'' + s + '\')">' + s + '</button>').join('') +
+    '<span style="width:10px"></span>' +
+    diffs.map(d => '<button class="fchip' + (bankDiff===d?' on':'') + '" onclick="bankSet(\'d\',\'' + d + '\')">' + d + '</button>').join('');
+
+  const rows = BANK.filter(x => (bankSubject==='全部'||x.s===bankSubject) && (bankDiff==='全部'||x.d===bankDiff));
+  document.getElementById('bankBody').innerHTML = rows.map(x =>
+    '<tr><td>' + x.q + '</td><td>' + x.s + '</td><td>' + x.g + '</td><td>' + x.d + '</td><td>' + x.st + '</td></tr>'
+  ).join('') || '<tr><td colspan="5" style="color:#8a877f">当前筛选下没有题目</td></tr>';
+
+  document.getElementById('bankCount').textContent = '共 ' + rows.length + ' 题可组卷；仅“已发布”状态的题目会被选中。';
+}
+function bankSet(type, v){
+  if(type==='s') bankSubject = v; else bankDiff = v;
+  bankRender();
+}
+bankRender();
+
+/* ================= 答题 DEMO ================= */
+const QS = [
+  {s:'语文 · 七年级', q:'「锲而不舍」中「锲」的意思是？', o:['雕刻','放弃','坚持','切割'], a:0, e:'「锲」意为雕刻。「锲而不舍」指不断地雕刻，比喻有恒心、有毅力。'},
+  {s:'数学 · 七年级', q:'若 2x + 3 = 11，则 x 的值是？', o:['3','4','5','6'], a:1, e:'2x = 11 − 3 = 8，所以 x = 4。'},
+  {s:'英语 · 七年级', q:'Choose the correct sentence.', o:['She go to school by bus.','She goes to school by bus.','She going to school by bus.','She gone to school by bus.'], a:1, e:'主语 she 为第三人称单数，一般现在时动词用 goes。'},
+  {s:'数学 · 七年级', q:'一个长方形长 6cm、宽 4cm，面积是？', o:['10 cm²','20 cm²','24 cm²','28 cm²'], a:2, e:'长方形面积 = 长 × 宽 = 6 × 4 = 24 cm²。'},
+  {s:'语文 · 七年级', q:'「不亦说乎」中「说」的意思是？', o:['说话','通「悦」，愉快','劝说','学说'], a:1, e:'「说」通「悦」，意为愉快。出自《论语·学而》。'}
+];
+const TOTAL = 300;
+let qi = 0, qAns = [null,null,null,null,null], qLeft = TOTAL, qTimer = null, qBg = 0, qRunning = false;
+
+function setStage(html){ document.getElementById('quizStage').innerHTML = html; }
+
+function qStartView(){
+  setStage(
+    '<div style="text-align:center;padding:18px 0 6px">' +
+      '<div style="font-size:11px;color:#8a877f;letter-spacing:.1em">今日学习任务</div>' +
+      '<div style="font-size:30px;font-weight:800;color:#1f6b58;margin:6px 0 2px">先学习，再使用</div>' +
+      '<div style="font-size:12px;color:#6d6b64">达标后获得 30 分钟手机使用时长</div>' +
+    '</div>' +
+    '<div class="kv">' +
+      '<div>题目数量<b>5 题</b></div><div>答题时长<b>5 分钟</b></div>' +
+      '<div>分数门槛<b>80 分</b></div><div>至少答对<b>4 题</b></div>' +
+      '<div>通过后可用<b>30 分钟</b></div><div>剩余重试<b>1 次</b></div>' +
+    '</div>' +
+    '<div style="font-size:11.5px;color:#8a877f;background:#f6f4ee;border-radius:9px;padding:9px 11px;margin:8px 0 14px;line-height:1.6">科目：数学 · 语文　难度：系统按近期表现匹配<br>答题期间离开页面 2 次将作废本次任务</div>' +
+    '<button class="btn primary" style="width:100%" onclick="qBegin()">开始答题</button>' +
+    '<div style="text-align:center;margin-top:12px"><button class="link" onclick="qEmergency()">紧急呼叫</button></div>' +
+    '<div style="font-size:11px;color:#a09d94;text-align:center;margin-top:16px">今日已通过 0 次 · 已用时 0 分钟</div>'
+  );
+}
+
+function qBegin(){
+  qi = 0; qAns = [null,null,null,null,null]; qLeft = TOTAL; qBg = 0; qRunning = true;
+  setStage(
+    '<div class="q-head"><span class="q-timer" id="qTimerTxt">05:00</span><span id="qProg">第 1 / 5 题</span>' +
+      '<button class="link" onclick="qLeave()">模拟切后台</button></div>' +
+    '<div id="qWarnBox"></div>' +
+    '<div class="q-meta" id="qMeta"></div>' +
+    '<div class="q-stem" id="qStem"></div>' +
+    '<div id="qOpts"></div>' +
+    '<div class="q-foot"><button class="btn ghost" onclick="qPrev()">上一题</button>' +
+      '<button class="btn ghost" onclick="qNext()">下一题</button>' +
+      '<button class="btn primary" onclick="qSubmit(false)">交卷</button></div>'
+  );
+  qRenderQ();
+  clearInterval(qTimer);
+  qTimer = setInterval(function(){
+    qLeft--;
+    const m = String(Math.floor(qLeft/60)).padStart(2,'0');
+    const s = String(qLeft%60).padStart(2,'0');
+    const el = document.getElementById('qTimerTxt');
+    if(el) el.textContent = m + ':' + s;
+    if(qLeft <= 0){ clearInterval(qTimer); qSubmit(true); }
+  }, 1000);
+}
+
+function qRenderQ(){
+  if(!document.getElementById('qStem')) return;
+  const q = QS[qi];
+  document.getElementById('qProg').textContent = '第 ' + (qi+1) + ' / ' + QS.length + ' 题';
+  document.getElementById('qMeta').innerHTML = '<span>' + q.s + '</span>';
+  document.getElementById('qStem').textContent = q.q;
+  document.getElementById('qOpts').innerHTML = q.o.map(function(o, i){
+    return '<button class="q-opt' + (qAns[qi]===i?' sel':'') + '" onclick="qPick(' + i + ')">' +
+      String.fromCharCode(65+i) + '. ' + o + '</button>';
+  }).join('');
+  const m = String(Math.floor(qLeft/60)).padStart(2,'0');
+  const s = String(qLeft%60).padStart(2,'0');
+  const el = document.getElementById('qTimerTxt');
+  if(el) el.textContent = m + ':' + s;
+}
+
+function qPick(i){ qAns[qi] = i; qRenderQ(); }
+function qPrev(){ if(qi>0){ qi--; qRenderQ(); } }
+function qNext(){ if(qi<QS.length-1){ qi++; qRenderQ(); } else { qSubmit(false); } }
+
+function qLeave(){
+  qBg++;
+  if(qBg>=2){ clearInterval(qTimer); qRunning=false; qInvalid(); return; }
+  const box = document.getElementById('qWarnBox');
+  if(box) box.innerHTML = '<div class="q-warn" style="display:block">检测到离开答题页 1 次。再次离开，本次任务将作废。</div>';
+}
+
+function qInvalid(){
+  setStage(
+    '<div style="text-align:center;padding:30px 0 10px">' +
+      '<div style="font-size:30px;font-weight:800;color:#9c3b32">本次作废</div>' +
+      '<div style="font-size:12.5px;color:#6d6b64;margin-top:8px">答题期间离开页面 2 次，本次任务不计结果。</div>' +
+    '</div>' +
+    '<div class="wrong" style="background:#f6f4ee;border-color:#e3ded3;color:#55524b">本次不消耗重试次数，可免费重新发起一次。家长端会记录一条“可疑作答”标记。</div>' +
+    '<button class="btn primary" style="width:100%;margin-top:6px" onclick="qBegin()">重新答题</button>' +
+    '<div style="text-align:center;margin-top:10px"><button class="link" onclick="qStartView()">返回锁屏页</button></div>'
+  );
+}
+
+function qSubmit(timeout){
+  clearInterval(qTimer); qRunning=false;
+  let correct = 0;
+  qAns.forEach(function(a,i){ if(a === QS[i].a) correct++; });
+  const score = Math.floor(correct / QS.length * 100);
+  const pass = score >= 80;
+  const unanswered = qAns.filter(function(a){ return a===null; }).length;
+  const used = TOTAL - Math.max(0, qLeft);
+  const usedStr = Math.floor(used/60) + ' 分 ' + (used%60) + ' 秒';
+
+  if(pass){
+    const points = 10 + (score===100?5:0);
+    const wrongList = QS.filter(function(q,i){ return qAns[i] !== q.a; });
+    setStage(
+      '<div style="text-align:center;padding:14px 0 4px">' +
+        '<div style="display:inline-block;font-size:11px;padding:3px 10px;border-radius:999px;background:#e9f2ee;color:#1f6b58;font-weight:700">已通过</div>' +
+        '<div class="result-score result-pass">' + score + '<small> / 100</small></div>' +
+        '<div style="font-size:12px;color:#6d6b64">门槛 80 分 · 答对 ' + correct + ' / ' + QS.length + ' 题' + (timeout?' · 超时提交':'') + '</div>' +
+      '</div>' +
+      '<div class="kv">' +
+        '<div>获得使用时长<b>30 分钟</b></div><div>获得积分<b>+' + points + '</b></div>' +
+        '<div>连续打卡<b>7 天</b></div><div>答题用时<b>' + usedStr + '</b></div>' +
+      '</div>' +
+      (wrongList.length ?
+        '<div style="font-size:12px;color:#8a877f;margin:10px 0 4px">错题解析</div>' +
+        wrongList.map(function(q){
+          return '<div class="wrong"><b>正确答案：</b>' + q.o[q.a] + '<br>' + q.e + '</div>';
+        }).join('') :
+        '<div class="wrong" style="background:#f1f8f4;border-color:#d6e9df;color:#1f6b58">全部答对，没有错题。</div>'
+      ) +
+      '<button class="btn primary" style="width:100%;margin-top:8px" onclick="qSession()">开始使用 30 分钟</button>' +
+      '<div style="text-align:center;margin-top:10px"><button class="link" onclick="qStartView()">留在这里查看</button></div>'
+    );
+  } else {
+    const wrongList = QS.filter(function(q,i){ return qAns[i] !== q.a; });
+    setStage(
+      '<div style="text-align:center;padding:14px 0 4px">' +
+        '<div style="display:inline-block;font-size:11px;padding:3px 10px;border-radius:999px;background:#fbebe8;color:#9c3b32;font-weight:700">未通过</div>' +
+        '<div class="result-score result-fail">' + score + '<small> / 100</small></div>' +
+        '<div style="font-size:12px;color:#6d6b64">距门槛还差 ' + (80-score) + ' 分 · 答对 ' + correct + ' / ' + QS.length + ' 题' + (unanswered?' · 未答 '+unanswered+' 题':'') + '</div>' +
+      '</div>' +
+      '<div class="wrong" style="background:#f6f4ee;border-color:#e3ded3;color:#55524b">剩余重试 1 次，需等待冷却 10 分钟。本次未获得使用时长。</div>' +
+      '<div style="font-size:12px;color:#8a877f;margin:10px 0 4px">错题解析</div>' +
+      wrongList.map(function(q){
+        return '<div class="wrong"><b>正确答案：</b>' + q.o[q.a] + '<br>' + q.e + '</div>';
+      }).join('') +
+      '<button class="btn primary" style="width:100%;margin-top:8px" onclick="qBegin()">再试一次（演示跳过冷却）</button>' +
+      '<button class="btn ghost" style="width:100%;margin-top:8px" onclick="qLearn()">进入学习模式</button>'
+    );
+  }
+}
+
+function qLearn(){
+  setStage(
+    '<div style="padding:10px 0 4px">' +
+      '<div style="font-size:11px;color:#8a877f;letter-spacing:.1em">学习模式</div>' +
+      '<div style="font-size:22px;font-weight:800;margin:4px 0 6px">本次未通过</div>' +
+      '<div style="font-size:12.5px;color:#6d6b64;line-height:1.7">仅可使用白名单应用。可在结果页查看错题解析，准备好后重新发起任务。</div>' +
+    '</div>' +
+    '<div class="kv">' +
+      '<div>下次可答题<b>06:30</b></div><div>剩余重试<b>0 次</b></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#8a877f;margin:10px 0 6px">可使用的应用</div>' +
+    ['电话','短信','词典','数学练习'].map(function(a){
+      return '<div style="display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #efece4;font-size:13px;color:#3d3b36">' + a + '<span style="color:#1f6b58;font-size:11.5px">可用</span></div>';
+    }).join('') +
+    '<button class="btn ghost" style="width:100%;margin-top:14px" onclick="qStartView()">返回锁屏页</button>' +
+    '<div style="text-align:center;margin-top:10px"><button class="link" onclick="qEmergency()">联系家长 / 紧急呼叫</button></div>'
+  );
+}
+
+function qSession(){
+  setStage(
+    '<div style="text-align:center;padding:22px 0 8px">' +
+      '<div style="font-size:11px;color:#8a877f;letter-spacing:.1em">使用中</div>' +
+      '<div style="font-size:44px;font-weight:800;color:#1f6b58;line-height:1.2">30:00</div>' +
+      '<div style="font-size:12px;color:#6d6b64">剩余可用时长</div>' +
+    '</div>' +
+    '<div class="kv"><div>今日已用<b>0 分钟</b></div><div>每日上限<b>120 分钟</b></div></div>' +
+    '<div class="wrong" style="background:#f6f4ee;border-color:#e3ded3;color:#55524b">演示状态：实际产品中离开答题页即进入桌面，剩余 5 分钟与 1 分钟会提醒，到期自动回到锁屏页。</div>' +
+    '<button class="btn ghost" style="width:100%;margin-top:8px" onclick="qStartView()">结束使用（返回锁屏）</button>' +
+    '<div style="text-align:center;margin-top:10px"><button class="link" onclick="qStartView()">查看激励中心（演示略）</button></div>'
+  );
+}
+
+function qEmergency(){
+  setStage(
+    '<div style="padding:26px 0 8px;text-align:center">' +
+      '<div style="font-size:22px;font-weight:800">紧急呼叫</div>' +
+      '<div style="font-size:12.5px;color:#6d6b64;margin-top:6px">该功能在任何模式下均可用。</div>' +
+    '</div>' +
+    ['爸爸','妈妈','120'].map(function(n){
+      return '<div style="display:flex;justify-content:space-between;padding:12px 2px;border-bottom:1px solid #efece4;font-size:13.5px">' + n + '<span style="color:#1f6b58">拨号</span></div>';
+    }).join('') +
+    '<button class="btn ghost" style="width:100%;margin-top:16px" onclick="qStartView()">返回</button>'
+  );
+}
+
+/* ================= 身份选择 DEMO ================= */
+function idEl(){ return document.getElementById('idStage'); }
+
+function idHome(){
+  idEl().innerHTML =
+    '<div style="text-align:center;padding:26px 0 18px">' +
+      '<div style="font-size:11px;letter-spacing:.14em;color:#1f6b58;font-weight:700">学习解锁</div>' +
+      '<div style="font-size:22px;font-weight:800;margin-top:6px">先学习，再使用手机</div>' +
+      '<div style="font-size:11.5px;color:#8a877f;margin-top:4px">请选择你的身份</div>' +
+    '</div>' +
+    '<div onclick="idParent()" style="background:#1f6b58;color:#fff;border-radius:14px;padding:18px;cursor:pointer;margin-bottom:12px">' +
+      '<div style="font-size:16px;font-weight:800">我是家长</div>' +
+      '<div style="font-size:11.5px;opacity:.85;margin-top:3px">微信登录，管理孩子的手机使用</div>' +
+      '<div style="font-size:11px;opacity:.7;margin-top:10px">配置题库与规则 · 查看记录 · 开通会员</div>' +
+    '</div>' +
+    '<div onclick="idStudent()" style="border:1px solid #d8d3c8;background:#fff;border-radius:14px;padding:18px;cursor:pointer">' +
+      '<div style="font-size:16px;font-weight:800">我是学生</div>' +
+      '<div style="font-size:11.5px;color:#6d6b64;margin-top:3px">输入家长提供的配对码，开始答题解锁</div>' +
+      '<div style="font-size:11px;color:#a09d94;margin-top:10px">无需登录 · 答题达标后获得使用时长</div>' +
+    '</div>' +
+    '<div style="font-size:10.5px;color:#a09d94;text-align:center;line-height:1.7;margin-top:18px">继续即表示已阅读《隐私说明》与《数据收集清单》<br>学生身份不展示价格与购买入口</div>';
+}
+
+function idParent(){
+  idEl().innerHTML =
+    '<div style="margin:10px 0 16px"><button class="link" onclick="idHome()">← 返回身份选择</button></div>' +
+    '<div style="font-size:11px;color:#8a877f">家长身份</div>' +
+    '<div style="font-size:20px;font-weight:800;margin:4px 0 10px">微信登录</div>' +
+    '<div style="font-size:12px;color:#6d6b64;line-height:1.7;background:#f6f4ee;border-radius:10px;padding:10px 12px">授权仅用于账号识别，不获取通讯录；首次登录需绑定手机号，用于订单找回与支付风控。</div>' +
+    '<button class="btn primary" style="width:100%;margin-top:18px;background:#0fae6e" onclick="idParentDone()">微信一键登录</button>' +
+    '<div style="text-align:center;margin-top:10px"><button class="link" onclick="idParentDone()">已有家庭，直接登录</button></div>' +
+    '<div style="font-size:10.5px;color:#a09d94;line-height:1.7;margin-top:20px">已绑定学生设备上登录时，会额外校验该微信是否为该家庭主家长。</div>';
+}
+
+function idParentDone(){
+  idEl().innerHTML =
+    '<div style="padding:12px 0 6px">' +
+      '<div style="font-size:10.5px;color:#8a877f">家长身份 · 演示家庭</div>' +
+      '<div style="font-size:18px;font-weight:800;margin-top:2px">李女士的家庭</div>' +
+    '</div>' +
+    '<div class="kv" style="margin-bottom:12px">' +
+      '<div>已绑定设备<b>1 台</b></div><div>今日已通过<b>1 次</b></div>' +
+      '<div>会员状态<b>试用中</b></div><div>今日已用<b>30 分钟</b></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#8a877f;margin-bottom:6px">快捷操作</div>' +
+    ['配置题库','调整解锁策略','查看今日记录','开通会员'].map(function(t){
+      return '<div style="display:flex;justify-content:space-between;padding:10px 2px;border-bottom:1px solid #efece4;font-size:12.5px">' + t + '<span style="color:#1f6b58">›</span></div>';
+    }).join('') +
+    '<button class="btn ghost" style="width:100%;margin-top:16px" onclick="idHome()">返回身份选择（演示）</button>' +
+    '<div style="font-size:10.5px;color:#a09d94;text-align:center;margin-top:10px">同一 App 内切换回身份选择仅家长可用</div>';
+}
+
+function idStudent(){
+  idEl().innerHTML =
+    '<div style="margin:10px 0 16px"><button class="link" onclick="idHome()">← 返回身份选择</button></div>' +
+    '<div style="font-size:11px;color:#8a877f">学生身份</div>' +
+    '<div style="font-size:20px;font-weight:800;margin:4px 0 10px">输入配对码</div>' +
+    '<div style="font-size:12px;color:#6d6b64;line-height:1.7">请向家长索取 6 位配对码，有效期 10 分钟。</div>' +
+    '<div style="display:flex;gap:8px;margin:18px 0 6px">' +
+      ['4','8','2','9','1','3'].map(function(n){ return '<div style="flex:1;height:42px;line-height:42px;text-align:center;border:1px solid #d8d3c8;border-radius:9px;font-size:19px;font-weight:700;background:#fff">' + n + '</div>'; }).join('') +
+    '</div>' +
+    '<button class="btn primary" style="width:100%;margin-top:18px" onclick="idStudentDone()">绑定设备</button>' +
+    '<div style="font-size:10.5px;color:#a09d94;line-height:1.7;margin-top:16px">绑定后本机进入学生身份，需授权设备管理、无障碍与使用情况访问；任一权限缺失会降级为提醒模式。</div>';
+}
+
+function idStudentDone(){
+  idEl().innerHTML =
+    '<div style="padding:12px 0 6px">' +
+      '<div style="font-size:10.5px;color:#8a877f">已加入家庭</div>' +
+      '<div style="font-size:18px;font-weight:800;margin-top:2px">李女士的家庭</div>' +
+    '</div>' +
+    '<div class="kv">' +
+      '<div>题目数量<b>5 题</b></div><div>答题时长<b>5 分钟</b></div>' +
+      '<div>分数门槛<b>80 分</b></div><div>至少答对<b>4 题</b></div>' +
+      '<div>通过后可用<b>30 分钟</b></div><div>剩余重试<b>1 次</b></div>' +
+    '</div>' +
+    '<div class="wrong" style="background:#f6f4ee;border-color:#e3ded3;color:#55524b">绑定关系由家长端确认；同一台设备同一时间只能有一个身份，学生身份下不显示价格与购买入口。</div>' +
+    '<button class="btn primary" style="width:100%;margin-top:8px" onclick="idHome()">进入学生模式（返回演示首页）</button>' +
+    '<div style="font-size:10.5px;color:#a09d94;line-height:1.7;margin-top:10px">已绑定设备下次启动将跳过身份选择，直接进入锁屏答题页。</div>';
+}
+idHome();
+
+/* ================= 会员中心 DEMO ================= */
+const VIP = { type:'试用中', days:1, hours:6, pending:null, watching:false };
+
+function vipStatusText(){
+  if(VIP.type === '永久会员') return '永久有效';
+  return '剩余 ' + VIP.days + ' 天 ' + VIP.hours + ' 小时';
+}
+function vipHasPaid(){ return VIP.type === '月度会员' || VIP.type === '年度会员' || VIP.type === '永久会员'; }
+
+function vipRender(){
+  const s = document.getElementById('vipStage');
+  if(!s) return;
+  const canWatch = !vipHasPaid();
+  s.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 10px">' +
+      '<div style="font-size:17px;font-weight:800">会员中心</div>' +
+      '<div style="font-size:10.5px;padding:2px 8px;border-radius:999px;background:#e9f2ee;color:#1f6b58;font-weight:700">' + VIP.type + '</div>' +
+    '</div>' +
+    '<div style="background:#1f6b58;color:#fff;border-radius:12px;padding:14px 15px;margin-bottom:14px">' +
+      '<div style="font-size:10.5px;opacity:.8">当前权益</div>' +
+      '<div style="font-size:22px;font-weight:800;margin:2px 0 3px">' + vipStatusText() + '</div>' +
+      '<div style="font-size:11px;opacity:.85">管控覆盖本家庭全部已绑定设备 · 到期前 3 天提醒</div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#8a877f;margin:0 0 7px">选择套餐</div>' +
+    vipPlanCard('月度会员','¥9','30 天','') +
+    vipPlanCard('年度会员','¥99','365 天','推荐 · 约 ¥8.25/月') +
+    vipPlanCard('永久会员','¥199','产品运营期内','一次购买，不再续费') +
+    (canWatch ? '<button class="btn primary" style="width:100%;margin-top:12px;background:#c07a1c" onclick="vipWatch()">看视频领 1 天</button>' : '') +
+    '<div style="font-size:10.5px;color:#a09d94;text-align:center;line-height:1.6;margin-top:10px">自动续费默认关闭，可在订单页主动开启<br>学生端不展示价格与购买入口</div>';
+}
+
+function vipPlanCard(name, price, term, note){
+  const on = VIP.type === name;
+  return '<div onclick="vipOrder(\'' + name + '\',\'' + price + '\',\'' + term + '\')" style="' +
+    'border:1px solid ' + (on?'#1f6b58':'#e3ded3') + ';background:' + (on?'#e9f2ee':'#fff') + ';border-radius:11px;padding:11px 13px;margin-bottom:8px;cursor:pointer">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+      '<span style="font-size:13.5px;font-weight:700">' + name + '</span>' +
+      '<span style="font-size:17px;font-weight:800;color:#1f6b58">' + price + '</span>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#8a877f;margin-top:2px">' +
+      '<span>' + term + '</span><span>' + note + '</span></div></div>';
+}
+
+function vipOrder(name, price, term){
+  const s = document.getElementById('vipStage');
+  VIP.pending = {name:name, price:price, term:term};
+  s.innerHTML =
+    '<div style="margin:12px 0 14px"><button class="link" onclick="vipRender()">← 返回会员中心</button></div>' +
+    '<div style="font-size:17px;font-weight:800;margin-bottom:12px">确认订单</div>' +
+    '<div style="background:#f6f4ee;border-radius:11px;padding:13px;font-size:12.5px;color:#4b4943;line-height:1.9">' +
+      '<div style="display:flex;justify-content:space-between"><span>' + name + '</span><b>' + price + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between"><span>有效期</span><span>' + term + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span>覆盖设备</span><span>本家庭全部学生设备</span></div>' +
+    '</div>' +
+    '<label style="display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:#6d6b64;margin:12px 0;line-height:1.6">' +
+      '<input type="checkbox" id="vipAuto"> 开启自动续费（默认关闭，可随时关闭；扣款前 5 天通知）</label>' +
+    '<div style="font-size:11px;color:#8a877f;margin-bottom:6px">支付方式</div>' +
+    '<button class="btn primary" style="width:100%;margin-bottom:8px" onclick="vipPay(\'微信支付\')">微信支付 ' + price + '</button>' +
+    '<button class="btn ghost" style="width:100%" onclick="vipPay(\'支付宝\')">支付宝 ' + price + '</button>' +
+    '<div style="font-size:10.5px;color:#a09d94;margin-top:10px;line-height:1.6">支付成功 5 秒内生效；若未生效可点“刷新权益”，系统 60 秒内自动补发。</div>';
+}
+
+function vipWatch(){
+  const s = document.getElementById('vipStage');
+  const canWatch = !vipHasPaid();
+  if(!canWatch) return;
+  s.innerHTML =
+    '<div style="height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#131313;color:#fff;border-radius:10px;min-height:430px">' +
+      '<div style="font-size:30px;margin-bottom:10px">▶</div>' +
+      '<div style="font-size:13px;font-weight:700">激励视频播放中</div>' +
+      '<div style="font-size:11px;opacity:.7;margin-top:6px">完整观看后发放 24 小时权益</div>' +
+      '<div id="vipCd" style="font-size:12px;color:#c07a1c;margin-top:16px">3 秒后模拟完播</div>' +
+    '</div>';
+  let left = 3;
+  const t = setInterval(function(){
+    left--;
+    const el = document.getElementById('vipCd');
+    if(el) el.textContent = left + ' 秒后模拟完播';
+    if(left <= 0){
+      clearInterval(t);
+      VIP.days += 1;
+      VIP.type = VIP.type === '试用中' ? '视频权益' : VIP.type;
+      vipRender();
+      const note = document.createElement('div');
+      note.style.cssText = 'position:absolute;left:20px;right:20px;bottom:18px;background:#1f6b58;color:#fff;font-size:12px;text-align:center;padding:9px;border-radius:9px';
+      note.textContent = '已获得 24 小时权益，当前' + vipStatusText();
+      document.getElementById('vipStage').appendChild(note);
+      setTimeout(function(){ if(note.parentNode) note.parentNode.removeChild(note); }, 3000);
+    }
+  }, 1000);
+}
+
+function vipPay(channel){
+  const s = document.getElementById('vipStage');
+  const p = VIP.pending;
+  s.innerHTML =
+    '<div style="padding:20px 0 6px;text-align:center">' +
+      '<div style="font-size:30px;color:#1f6b58;font-weight:800">✓</div>' +
+      '<div style="font-size:19px;font-weight:800;margin-top:6px">支付成功</div>' +
+      '<div style="font-size:12px;color:#6d6b64;margin-top:4px">' + channel + ' · ' + p.price + ' · ' + p.name + '</div>' +
+    '</div>' +
+    '<div class="kv"><div>权益类型<b>' + p.name + '</b></div><div>状态<b>已生效</b></div>' +
+    '<div>覆盖设备<b>本家庭全部设备</b></div><div>自动续费<b>' + (document.getElementById('vipAuto') && document.getElementById('vipAuto').checked ? '已开启' : '未开启') + '</b></div></div>' +
+    '<div style="font-size:11.5px;color:#6d6b64;line-height:1.7;background:#f6f4ee;border-radius:9px;padding:9px 11px">学生端将在 10 秒内同步权益状态；若设备正在管控中，无需重新配对即可继续执行规则。</div>' +
+    '<button class="btn primary" style="width:100%;margin-top:12px" onclick="vipDone()">完成</button>';
+  VIP.type = p.name;
+  VIP.days = p.name === '年度会员' ? 365 : (p.name === '月度会员' ? 30 : 0);
+  VIP.hours = 0;
+}
+
+function vipDone(){ VIP.pending = null; vipRender(); }
+vipRender();
+
+qStartView();
+</script>
+</body>
+</html>
