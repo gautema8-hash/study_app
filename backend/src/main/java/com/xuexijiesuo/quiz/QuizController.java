@@ -27,40 +27,66 @@ public class QuizController {
     private final JdbcClient db;
     private final JdbcTemplate jt;
     private final TokenService tokens;
+    private final com.xuexijiesuo.bank.ConfigController configs;
     private final ObjectMapper om = new ObjectMapper();
 
-    public QuizController(JdbcClient db, JdbcTemplate jt, TokenService tokens) {
+    public QuizController(JdbcClient db, JdbcTemplate jt, TokenService tokens, com.xuexijiesuo.bank.ConfigController configs) {
         this.db = db;
         this.jt = jt;
         this.tokens = tokens;
+        this.configs = configs;
     }
 
     public record StartReq(Integer count, Integer durationMin, Integer threshold) {}
     public record AnswerItem(Long questionId, String answer, Integer costMs, Integer switchCount) {}
     public record SubmitReq(Long taskId, List<AnswerItem> answers) {}
 
-    // ---------- 出题（FR-07） ----------
+    // ---------- 出题（FR-07 配置化 FR-08 + 错题重练 FR-09） ----------
     @PostMapping("/start")
-    public Map<String, Object> start(@RequestHeader("Authorization") String auth, @RequestBody(required = false) StartReq req) {
+    public Map<String, Object> start(@RequestHeader("Authorization") String auth) {
         TokenService.TokenClaims c = studentClaims(auth);
         long profileId = c.profileId() == null ? throwNoProfile() : c.profileId();
-        int count = req == null || req.count() == null ? 10 : Math.min(Math.max(req.count(), 5), 30);   // DIY 默认/边界
-        int durationMin = req == null || req.durationMin() == null ? 10 : Math.min(Math.max(req.durationMin(), 3), 30);
-        int threshold = req == null || req.threshold() == null ? 80 : Math.min(Math.max(req.threshold(), 60), 100);
+        Long familyId = db.sql("SELECT family_id FROM student_profile WHERE id=?").param(profileId)
+            .query(Long.class).optional().orElseThrow(() -> bad("学生档案不存在"));
+        Map<String, Object> cfg = configs.loadConfig(familyId); // DIY 配置为唯一来源(FR-08)，不再接受请求参数
+        int count = (int) cfg.get("count");
+        int durationMin = (int) cfg.get("durationMin");
+        int threshold = (int) cfg.get("threshold");
 
         Integer grade = db.sql("SELECT grade FROM student_profile WHERE id=?").param(profileId)
             .query(Integer.class).optional().orElseThrow(() -> bad("学生档案不存在"));
 
-        List<Map<String, Object>> picked = db.sql("""
+        List<Map<String, Object>> picked = new ArrayList<>();
+        Set<Long> pickedIds = new HashSet<>();
+
+        // 错题重练池（FR-09）：3 天前答错的题优先，占本次任务 ≤30%
+        int wrongCap = Math.max(1, count * 3 / 10);
+        List<Long> wrongIds = db.sql("""
+                SELECT DISTINCT ar.question_id FROM answer_record ar
+                JOIN quiz_task t ON ar.task_id = t.id
+                WHERE t.profile_id=? AND ar.is_correct=0
+                  AND ar.created_at <= NOW() - INTERVAL 3 DAY
+                  AND ar.created_at > NOW() - INTERVAL 30 DAY
+                LIMIT ?
+                """)
+            .param(profileId).param(wrongCap).query(Long.class).list();
+        for (Long qid : wrongIds) {
+            if (picked.size() >= wrongCap) break;
+            var q = fetchQuestion(qid, grade, familyId);
+            if (q != null) { picked.add(q); pickedIds.add(qid); }
+        }
+
+        // 新题：排除近 7 天已答（FR-07 去重）与已选错题
+        List<Map<String, Object>> fresh = db.sql("""
                 SELECT id, subject, difficulty, q_type, stem, options_json FROM question
-                WHERE status=1 AND grade=?
+                WHERE status=1 AND grade=? AND (family_id=? OR source=1)
                   AND id NOT IN (
                     SELECT ar.question_id FROM answer_record ar
                     JOIN quiz_task t ON ar.task_id=t.id
                     WHERE t.profile_id=? AND t.created_at > NOW() - INTERVAL 7 DAY)
                 ORDER BY RAND() LIMIT ?
                 """)
-            .param(grade).param(profileId).param(count)
+            .param(grade).param(familyId).param(profileId).param(count - picked.size())
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("id", rs.getLong("id"));
@@ -70,8 +96,14 @@ public class QuizController {
                 m.put("options", rs.getString("options_json"));
                 return m;
             }).list();
-        if (picked.size() < count)
-            throw bad("题库不足：该年级仅剩 " + picked.size() + " 道新题，请家长补充题库(E-03)"); // 7天去重后不足
+        for (Map<String, Object> q : fresh) {
+            if (picked.size() >= count) break;
+            long id = ((Number) q.get("id")).longValue();
+            if (pickedIds.add(id)) picked.add(q);
+        }
+        if (picked.isEmpty())
+            throw bad("题库不足：该年级暂无可用新题（7 天内已答完且无错题可重练），请家长补充题库(E-03)");
+        // 部分出题原则：错题重练命中但新题不足时，按实际可用题数出卷，不硬性凑满配置题数
 
         String idempotentKey = profileId + ":" + UUID.randomUUID().toString().replace("-", "");
         String configSnapshot;
@@ -98,9 +130,24 @@ public class QuizController {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("taskId", taskId);
         data.put("durationMin", durationMin);
-        data.put("threshold", threshold);
-        data.put("questions", picked); // 不含答案与解析（FR-36 同源原则）
+        data.put("threshold", threshold); // 仅任务返回一次，列表/配置接口脱敏(FR-10)
+        data.put("questions", picked);
         return ok(data);
+    }
+
+    /** 取一道仍在上架且年级匹配的题（错题重练用），不存在返回 null */
+    private Map<String, Object> fetchQuestion(long qid, Integer grade, long familyId) {
+        return db.sql("SELECT id, subject, difficulty, q_type, stem, options_json FROM question WHERE id=? AND status=1 AND grade=? AND (family_id=? OR source=1)")
+            .param(qid).param(grade).param(familyId)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", rs.getLong("id"));
+                m.put("subject", rs.getInt("subject"));
+                m.put("qType", rs.getInt("q_type"));
+                m.put("stem", rs.getString("stem"));
+                m.put("options", rs.getString("options_json"));
+                return m;
+            }).optional().orElse(null);
     }
 
     // ---------- 服务端判分（FR-12） ----------
