@@ -3,6 +3,7 @@ package com.xuexijiesuo.quiz;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.xuexijiesuo.account.TokenService;
+import com.xuexijiesuo.reward.RewardService;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.*;
@@ -29,12 +30,14 @@ public class QuizController {
     private final TokenService tokens;
     private final com.xuexijiesuo.bank.ConfigController configs;
     private final ObjectMapper om = new ObjectMapper();
+    private final RewardService rewards;
 
-    public QuizController(JdbcClient db, JdbcTemplate jt, TokenService tokens, com.xuexijiesuo.bank.ConfigController configs) {
+    public QuizController(JdbcClient db, JdbcTemplate jt, TokenService tokens, com.xuexijiesuo.bank.ConfigController configs, RewardService rewards) {
         this.db = db;
         this.jt = jt;
         this.tokens = tokens;
         this.configs = configs;
+        this.rewards = rewards;
     }
 
     public record StartReq(Integer count, Integer durationMin, Integer threshold) {}
@@ -175,12 +178,14 @@ public class QuizController {
         Map<Long, String> answers = new HashMap<>();
         Map<Long, String> analysis = new HashMap<>();
         Map<Long, String> stems = new HashMap<>();
+        Map<Long, Integer> diffs = new HashMap<>();
         for (Long qid : qids) {
-            db.sql("SELECT stem, answer, analysis FROM question WHERE id=?").param(qid)
+            db.sql("SELECT stem, answer, analysis, difficulty FROM question WHERE id=?").param(qid)
                 .query((rs, i) -> {
                     answers.put(qid, rs.getString("answer"));
                     analysis.put(qid, rs.getString("analysis"));
                     stems.put(qid, rs.getString("stem"));
+                    diffs.put(qid, rs.getInt("difficulty"));
                     return qid;
                 }).optional().orElseThrow(() -> bad("题目缺失:" + qid));
         }
@@ -231,6 +236,17 @@ public class QuizController {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("score", score);
         data.put("result", result); // 1达标 2未达标 3作废
+        if (result == 1) { // W6: 达标自动发激励（积分+打卡+勋章，FR-19~21）
+            List<Integer> correctDiffs = new ArrayList<>();
+            for (AnswerItem a : req.answers()) {
+                String std = answers.get(a.questionId());
+                if (std != null && norm(a.answer()).equals(norm(std))) {
+                    Integer d = diffs.get(a.questionId());
+                    correctDiffs.add(d == null ? 3 : d);
+                }
+            }
+            data.put("reward", rewards.grantTaskReward(profileId, correct, correctDiffs, score, threshold));
+        }
         data.put("threshold", threshold);
         data.put("correct", correct);
         data.put("total", total);
