@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../core/child_mode.dart';
+import '../core/kiosk.dart';
 
 /// 身份选择页（FR-32）：家长 / 孩子；孩子需已绑定学生档案
 class IdentityPage extends StatelessWidget {
@@ -20,7 +22,10 @@ class IdentityPage extends StatelessWidget {
       }
       final d = await Api.post('/api/auth/identity/select', body: {'scope': 'student', 'profileId': Api.profileIds.first});
       Api.setScopedToken(d['accessToken']);
-      if (context.mounted) Navigator.pushReplacementNamed(context, '/student');
+      // 孩子设备：写入本地标记（开机自启/直达/守护仅对本设备生效），并引导一次性设备管理员授权
+      await ChildMode.enable(d['accessToken']);
+      await Kiosk.requestActivation();
+      if (context.mounted) Navigator.pushReplacementNamed(context, '/gate');
     } on ApiException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));

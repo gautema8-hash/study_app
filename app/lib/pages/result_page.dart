@@ -11,7 +11,9 @@ class ResultPage extends StatelessWidget {
     final passed = result['result'] == 1;
     final reward = (result['reward'] as Map?)?.cast<String, dynamic>() ?? {};
     final medals = (reward['newMedals'] as List?) ?? [];
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       appBar: AppBar(title: const Text('判分结果'), automaticallyImplyLeading: false),
       body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(passed ? Icons.celebration : Icons.sentiment_dissatisfied, size: 96,
@@ -30,9 +32,10 @@ class ResultPage extends StatelessWidget {
             ]),
           )),
         const SizedBox(height: 32),
-        FilledButton(onPressed: () => Navigator.pushReplacementNamed(context, '/student'),
+        FilledButton(onPressed: () => Navigator.pushReplacementNamed(context, '/gate'),
             child: const Text('返回')),
       ])),
+      ),
     );
   }
 }

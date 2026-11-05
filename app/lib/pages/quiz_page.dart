@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../core/kiosk.dart';
 
 /// 答题页（FR-12）：切出提醒文案占位；单题作答计时简化为整卷计时
 class QuizPage extends StatefulWidget {
@@ -57,8 +58,15 @@ class _QuizPageState extends State<QuizPage> {
     final q = questions[index] as Map<String, dynamic>;
     final qid = (q['id'] as num).toInt();
     final options = _options(q);
-    return Scaffold(
-      appBar: AppBar(title: Text('答题 ${index + 1}/${questions.length}')),
+    return PopScope(
+      canPop: false, // 孩子端：答题中禁止返回退出（C2）
+      child: Scaffold(
+      appBar: AppBar(title: Text('答题 ${index + 1}/${questions.length}'),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(icon: const Icon(Icons.phone), tooltip: '紧急呼叫',
+              onPressed: () => Kiosk.openDialer('110')),
+        ]),
       body: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(q['stem'].toString(), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 24),
@@ -87,6 +95,7 @@ class _QuizPageState extends State<QuizPage> {
           ),
         ]),
       ])),
+      ),
     );
   }
 }
