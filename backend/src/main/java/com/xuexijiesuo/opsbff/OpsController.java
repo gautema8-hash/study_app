@@ -189,6 +189,80 @@ public class OpsController {
         return ok(Map.of("key", key, "value", value));
     }
 
+    // ---------- W6.1 审核工单（FR-W12：家长题目人工复核，REVIEWER/ADMIN 写） ----------
+    @GetMapping("/review/tickets")
+    public Map<String, Object> reviewTickets(@RequestParam(defaultValue = "1") Integer status) {
+        List<Map<String, Object>> list = db.sql("""
+                SELECT id, family_id, subject, grade, difficulty, stem, review_status, review_reason, created_at
+                FROM question WHERE review_status=? ORDER BY id DESC LIMIT 100
+                """).param(status)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", rs.getLong("id"));
+                m.put("familyId", rs.getLong("family_id"));
+                m.put("subject", rs.getInt("subject"));
+                m.put("grade", rs.getInt("grade"));
+                m.put("stem", rs.getString("stem"));
+                m.put("reason", rs.getString("review_reason"));
+                m.put("createdAt", rs.getString("created_at"));
+                return m;
+            }).list();
+        return ok(Map.of("list", list));
+    }
+
+    public record ReviewDecideReq(boolean pass, String reason) {}
+
+    @PostMapping("/review/tickets/{id}/decide")
+    public Map<String, Object> reviewDecide(@PathVariable Long id, @RequestBody ReviewDecideReq req) {
+        int n = jt.update("UPDATE question SET review_status=?, review_reason=? WHERE id=? AND review_status=1",
+            req.pass() ? 0 : 2, (req.pass() ? "人工复核通过" : "人工复核驳回: " + req.reason()), id);
+        if (n == 0) throw bad("工单不存在或已裁决");
+        return ok(Map.of("decided", true));
+    }
+
+    // ---------- W6.2 客服申诉工单（FR-W15/16，CS/ADMIN 写） ----------
+    @GetMapping("/tickets")
+    public Map<String, Object> tickets(@RequestParam(defaultValue = "0") Integer status) {
+        List<Map<String, Object>> list = db.sql("""
+                SELECT id, family_id, profile_id, task_id, type, content, status, decision, created_at
+                FROM appeal_ticket WHERE status=? ORDER BY id DESC LIMIT 100
+                """).param(status)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", rs.getLong("id"));
+                m.put("familyId", rs.getLong("family_id"));
+                m.put("profileId", rs.getObject("profile_id"));
+                m.put("taskId", rs.getObject("task_id"));
+                m.put("type", rs.getString("type"));
+                m.put("content", rs.getString("content"));
+                m.put("status", rs.getInt("status"));
+                m.put("decision", rs.getString("decision"));
+                m.put("createdAt", rs.getString("created_at"));
+                return m;
+            }).list();
+        return ok(Map.of("list", list));
+    }
+
+    public record AppealDecideReq(boolean approve, String decision) {}
+
+    @PostMapping("/tickets/{id}/decide")
+    public Map<String, Object> ticketDecide(@PathVariable Long id, @RequestBody AppealDecideReq req) {
+        var ticket = db.sql("SELECT task_id FROM appeal_ticket WHERE id=? AND status=0").param(id)
+            .query((rs, i) -> rs.getObject("task_id")).optional().orElse(null);
+        if (ticket == null) throw bad("工单不存在或已裁决");
+        jt.update("UPDATE appeal_ticket SET status=?, decision=? WHERE id=?",
+            req.approve() ? 2 : 3, req.decision(), id);
+        if (req.approve() && ticket instanceof Number taskIdNum) {
+            // 撤销判废：恢复任务有效并按达标处理（积分补偿 TODO）
+            jt.update("""
+                UPDATE quiz_task SET result=1, score=threshold, abnormal_flag=0
+                WHERE id=? AND result=3
+                """, taskIdNum.longValue());
+            jt.update("INSERT INTO alarm(family_id, type, title, content) VALUES((SELECT family_id FROM appeal_ticket WHERE id=?),'APPEAL_APPROVED','申诉通过','判废已撤销，任务恢复达标')", id);
+        }
+        return ok(Map.of("decided", true, "approved", req.approve()));
+    }
+
     @GetMapping("/summary")
     public Map<String, Object> summary() {
         Map<String, Object> d = new LinkedHashMap<>();
@@ -210,6 +284,10 @@ public class OpsController {
 
     private long sum(String sql) {
         return db.sql(sql).query(Long.class).single();
+    }
+
+    private ResponseStatusException bad(String msg) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, msg);
     }
 
     private Map<String, Object> ok(Map<String, Object> data) {

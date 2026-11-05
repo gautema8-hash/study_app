@@ -40,8 +40,14 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             }
             if (!"GET".equals(request.getMethod())) {
                 String role = c.scope().substring("admin:".length());
-                if (!role.equals("ADMIN") && !role.equals("FINANCE")) {
-                    response.sendError(403, "该角色无写权限");
+                // 细粒度写权限：按路径域映射角色（权限矩阵 FR-W 模块×角色）
+                boolean allowed;
+                if (path.startsWith("/api/ops/review")) allowed = role.equals("REVIEWER") || role.equals("ADMIN");
+                else if (path.startsWith("/api/ops/tickets")) allowed = role.equals("CS") || role.equals("ADMIN");
+                else if (path.startsWith("/api/ops/config")) allowed = role.equals("FINANCE") || role.equals("ADMIN");
+                else allowed = role.equals("ADMIN");
+                if (!allowed) {
+                    response.sendError(403, "该角色无此写权限");
                     return false;
                 }
             }

@@ -19,6 +19,7 @@ public class PingController {
     public Map<String, Object> ping() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("service", "xuexijiesuo-backend");
+        data.put("build", "20261105-0820-graywords"); // 构建指纹：验证运行代码版本
         data.put("time", LocalDateTime.now().toString());
         return Map.of("code", 0, "msg", "ok", "data", data);
     }

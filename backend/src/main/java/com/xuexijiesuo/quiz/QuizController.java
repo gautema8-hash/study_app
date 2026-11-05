@@ -82,7 +82,7 @@ public class QuizController {
         // 新题：排除近 7 天已答（FR-07 去重）与已选错题
         List<Map<String, Object>> fresh = db.sql("""
                 SELECT id, subject, difficulty, q_type, stem, options_json FROM question
-                WHERE status=1 AND grade=? AND (family_id=? OR source=1)
+                WHERE status=1 AND review_status=0 AND grade=? AND (family_id=? OR source=1)
                   AND id NOT IN (
                     SELECT ar.question_id FROM answer_record ar
                     JOIN quiz_task t ON ar.task_id=t.id
@@ -140,7 +140,7 @@ public class QuizController {
 
     /** 取一道仍在上架且年级匹配的题（错题重练用），不存在返回 null */
     private Map<String, Object> fetchQuestion(long qid, Integer grade, long familyId) {
-        return db.sql("SELECT id, subject, difficulty, q_type, stem, options_json FROM question WHERE id=? AND status=1 AND grade=? AND (family_id=? OR source=1)")
+        return db.sql("SELECT id, subject, difficulty, q_type, stem, options_json FROM question WHERE id=? AND status=1 AND review_status=0 AND grade=? AND (family_id=? OR source=1)")
             .param(qid).param(grade).param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();

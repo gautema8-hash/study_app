@@ -65,8 +65,16 @@ public class QuestionController {
         long familyId = parentCtx(auth).familyId();
         List<String> errs = validate(q);
         if (!errs.isEmpty()) throw bad(String.join("; ", errs));
-        long id = insertQuestion(familyId, q);
-        return ok(Map.of("id", id));
+        int reviewStatus = 0; String reason = null;
+        var hit = grayHit(q.stem() != null ? q.stem() : "") != null ? grayHit(q.stem())
+                : (q.analysis() != null ? grayHit(q.analysis()) : null);
+        if (hit != null) {
+            if (hit.getKey() == 2) throw bad("含违禁词「" + hit.getValue() + "」，禁止入库(E-06 黑词驳回)");
+            reviewStatus = 1; // 灰词 → 人工复核工单(FR-W12)，审核通过前不出题
+            reason = "命中灰词「" + hit.getValue() + "」，待人工复核";
+        }
+        long id = insertQuestion(familyId, q, reviewStatus, reason);
+        return ok(Map.of("id", id, "reviewStatus", reviewStatus));
     }
 
     // ---------- 批量导入（FR-02，≤500 行，逐行校验，错误行不阻断合格行） ----------
@@ -86,7 +94,15 @@ public class QuestionController {
                 failed.add(Map.of("row", i + 1, "reason", String.join("; ", errs)));
                 continue;
             }
-            insertQuestion(familyId, items.get(i));
+            QUpsert it = items.get(i);
+            int reviewStatus = 0; String reason = null;
+            var hit = grayHit(it.stem() != null ? it.stem() : "") != null ? grayHit(it.stem())
+                    : (it.analysis() != null ? grayHit(it.analysis()) : null);
+            if (hit != null) {
+                if (hit.getKey() == 2) { failed.add(Map.of("row", i + 1, "reason", "含违禁词「" + hit.getValue() + "」")); continue; }
+                reviewStatus = 1; reason = "命中灰词「" + hit.getValue() + "」，待人工复核";
+            }
+            insertQuestion(familyId, it, reviewStatus, reason);
             inserted++;
         }
         return ok(Map.of("total", items.size(), "inserted", inserted, "failed", failed));
@@ -148,7 +164,7 @@ public class QuestionController {
     }
 
     // ---------- helpers ----------
-    private long insertQuestion(long familyId, QUpsert q) {
+    private long insertQuestion(long familyId, QUpsert q, int reviewStatus, String reviewReason) {
         KeyHolder kh = new GeneratedKeyHolder();
         final String optionsJson;
         try {
@@ -158,7 +174,7 @@ public class QuestionController {
         }
         jt.update(con -> {
             PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO question(family_id, subject, grade, difficulty, q_type, stem, options_json, answer, analysis, source, status, review_status) VALUES(?,?,?,?,?,?,?,?,?,2,1,0)",
+                "INSERT INTO question(family_id, subject, grade, difficulty, q_type, stem, options_json, answer, analysis, source, status, review_status, review_reason) VALUES(?,?,?,?,?,?,?,?,?,2,1,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, familyId);
             ps.setInt(2, q.subject());
@@ -169,9 +185,20 @@ public class QuestionController {
             ps.setString(7, optionsJson);
             ps.setString(8, q.answer());
             ps.setString(9, q.analysis());
+            ps.setInt(10, reviewStatus);
+            ps.setString(11, reviewReason);
             return ps;
         }, kh);
         return kh.getKey().longValue();
+    }
+
+    /** 灰词/黑词命中检查（D-02 机审 API 接入前的本地替身） */
+    private Map.Entry<Integer, String> grayHit(String text) {
+        if (text == null || text.isBlank()) return null;
+        var words = db.sql("SELECT word, level FROM sensitive_word")
+            .query((rs, i) -> Map.entry(rs.getInt("level"), rs.getString("word"))).list();
+        for (var w : words) if (text.contains(w.getValue())) return w;
+        return null;
     }
 
     private ResponseStatusException bad(String msg) {
