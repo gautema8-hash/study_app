@@ -32,10 +32,21 @@ class Api {
       _run(http.put(Uri.parse('$kApiBase$path'), headers: _headers, body: jsonEncode(body ?? {})));
 
   static Future<Map<String, dynamic>> _run(Future<http.Response> f) async {
-    final r = await f;
-    final json = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
+    http.Response r;
+    try {
+      r = await f;
+    } catch (e) {
+      // 网络层异常（连接拒绝/明文被禁/DNS等）透出真实原因
+      throw ApiException('网络异常: $e');
+    }
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(utf8.decode(r.bodyBytes)) as Map<String, dynamic>;
+    } catch (e) {
+      throw ApiException('响应非JSON(HTTP ${r.statusCode}): ${utf8.decode(r.bodyBytes).substring(0, r.bodyBytes.length > 120 ? 120 : r.bodyBytes.length)}');
+    }
     if (json['code'] != 0) {
-      throw ApiException(json['msg']?.toString() ?? '请求失败(code=${json['code']})');
+      throw ApiException(json['msg']?.toString() ?? '请求失败(HTTP ${r.statusCode})');
     }
     return (json['data'] as Map?)?.cast<String, dynamic>() ?? {};
   }
