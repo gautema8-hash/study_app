@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AdminLayout from './components/AdminLayout'
+import Login from './pages/login'
 
 // W1~W10 页面骨架：占位组件，后续按《Web 管理后台 PRD》逐页实现
 import Workbench from './pages/workbench'
@@ -17,6 +18,7 @@ export default function App() {
   return (
     <HashRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route element={<AdminLayout />}>
           <Route index element={<Navigate to="/workbench" replace />} />
           <Route path="/workbench" element={<Workbench />} />

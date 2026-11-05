@@ -1,5 +1,7 @@
-import { Layout, Menu, Typography } from 'antd'
+import { useEffect } from 'react'
+import { Layout, Menu, Typography, Button } from 'antd'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { getToken, clearToken } from '../auth'
 
 const { Sider, Header, Content } = Layout
 const { Title } = Typography
@@ -21,6 +23,11 @@ export const MENUS = [
 export default function AdminLayout() {
   const nav = useNavigate()
   const { pathname } = useLocation()
+
+  useEffect(() => { // 路由守卫：无 token 跳登录
+    if (!getToken()) nav('/login')
+  }, [pathname, nav])
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider theme="dark">
@@ -34,10 +41,11 @@ export default function AdminLayout() {
         />
       </Sider>
       <Layout>
-        <Header style={{ background: '#fff', borderBottom: '1px solid #eee' }}>
+        <Header style={{ background: '#fff', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px' }}>
           <Title level={4} style={{ lineHeight: '56px', margin: 0 }}>
             {MENUS.find((m) => m.key === pathname)?.label ?? ''}
           </Title>
+          <Button onClick={() => { clearToken(); nav('/login') }}>退出登录</Button>
         </Header>
         <Content style={{ margin: 16 }}>
           <Outlet />

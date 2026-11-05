@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +19,46 @@ import org.springframework.web.bind.annotation.*;
 public class OpsController {
 
     private final JdbcClient db;
+    private final JdbcTemplate jt;
+    private final com.xuexijiesuo.account.TokenService tokens;
 
-    public OpsController(JdbcClient db) {
+    public OpsController(JdbcClient db, JdbcTemplate jt, com.xuexijiesuo.account.TokenService tokens) {
         this.db = db;
+        this.jt = jt;
+        this.tokens = tokens;
+    }
+
+    public record AdminLoginReq(String username, String password) {}
+
+    // 后台登录（FR-W01：账号密码 → admin scope JWT；PLAIN 引导态首次登录自动升级 bcrypt）
+    @PostMapping("/auth/login")
+    public Map<String, Object> adminLogin(@RequestBody AdminLoginReq req) {
+        var row = db.sql("SELECT id, password_hash, role, status FROM admin_user WHERE username=?")
+            .param(req.username() == null ? "" : req.username())
+            .query((rs, i) -> Map.of(
+                "id", rs.getLong("id"),
+                "hash", rs.getString("password_hash"),
+                "role", rs.getString("role"),
+                "status", rs.getInt("status"))).optional().orElse(null);
+        if (row == null || ((Number) row.get("status")).intValue() != 1)
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号不存在或已停用");
+        String hash = (String) row.get("hash");
+        boolean ok;
+        if (hash.startsWith("PLAIN:")) {
+            ok = hash.substring(6).equals(req.password());
+            if (ok) jt.update("UPDATE admin_user SET password_hash=? WHERE id=?",
+                new BCryptPasswordEncoder().encode(req.password()), row.get("id")); // 升级为 bcrypt
+        } else {
+            ok = new BCryptPasswordEncoder().matches(req.password() == null ? "" : req.password(), hash);
+        }
+        if (!ok) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "密码错误");
+        String token = tokens.createAccess(((Number) row.get("id")).longValue(), "admin:" + row.get("role"), null, 1);
+        return ok(Map.of("accessToken", token, "role", row.get("role")));
+    }
+
+    @GetMapping("/auth/me")
+    public Map<String, Object> adminMe(jakarta.servlet.http.HttpServletRequest request) {
+        return ok(Map.of("role", request.getAttribute("adminRole")));
     }
 
     // ---------- W5.1 用户列表（手机号脱敏，FR-W04） ----------

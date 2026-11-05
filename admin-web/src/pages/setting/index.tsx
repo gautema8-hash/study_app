@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { apiFetch } from '../../auth'
 import { Card, Col, Input, Button, Row, message } from 'antd'
 
 // W9 系统配置（价格/试用/广告上限；双人复核 TODO）
@@ -17,7 +18,7 @@ export default function Setting() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch('/api/ops/config')
+      const r = await apiFetch('/api/ops/config')
       const j = await r.json()
       setCfg(j.data)
     } catch { message.error('后端未连接') }
@@ -28,7 +29,7 @@ export default function Setting() {
   const save = async (key: string) => {
     const value = edits[key]
     if (!value) return
-    const r = await fetch(`/api/ops/config/${key}`, {
+    const r = await apiFetch(`/api/ops/config/${key}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }),
     })
     if (r.ok) { message.success(`${key} 已更新`); setEdits((e) => { const c = { ...e }; delete c[key]; return c }); load() }

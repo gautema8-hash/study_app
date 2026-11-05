@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { apiFetch } from '../../auth'
 import { Table, Tag, Select, Space, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { SUBJECTS, subjectName, Q_STATUS } from '../../components/names'
@@ -15,7 +16,7 @@ export default function BankOps() {
       const qs = new URLSearchParams({ page: String(p), size: '20' })
       if (s) qs.set('subject', String(s))
       if (g) qs.set('grade', String(g))
-      const r = await fetch(`/api/ops/questions?${qs}`)
+      const r = await apiFetch(`/api/ops/questions?${qs}`)
       const j = await r.json()
       setData(j.data)
     } catch { message.error('后端未连接') }

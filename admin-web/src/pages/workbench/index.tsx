@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { apiFetch } from '../../auth'
 import { Card, Col, Row, Statistic, Alert } from 'antd'
 
 // W1 工作台：对接 /api/ops/summary 真实数据（运营汇总）
@@ -7,7 +8,7 @@ export default function Workbench() {
   const [err, setErr] = useState(false)
 
   useEffect(() => {
-    fetch('/api/ops/summary')
+    apiFetch('/api/ops/summary')
       .then((r) => r.json())
       .then((j) => setD(j.data))
       .catch(() => setErr(true))
