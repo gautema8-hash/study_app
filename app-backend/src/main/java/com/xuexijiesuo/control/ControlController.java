@@ -77,7 +77,7 @@ public class ControlController {
         Long remain = db.sql("SELECT TIMESTAMPDIFF(SECOND, NOW(), deadline_at) FROM unlock_session WHERE id=? AND is_delete=0")
             .param(s.get("sessionId")).query(Long.class).single();
         if (remain <= 0) { // 到期 → 锁定（服务端时间裁决，防 T-03）
-            jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE id=?", s.get("sessionId"));
+            jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE id=? AND is_delete=0", s.get("sessionId"));
             data.put("state", 1);
             data.put("locked", true);
             data.put("reason", "expired");
@@ -134,7 +134,7 @@ public class ControlController {
         long familyId = parentClaims(auth);
         verifyParentPwd(familyId, req.password());
         if (req.profileId() == null || !profileInFamily(req.profileId(), familyId)) throw bad("学生档案不存在");
-        jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE profile_id=? AND state=5", req.profileId());
+        jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE profile_id=? AND state=5 AND is_delete=0", req.profileId());
         int sessionMin = (int) loadConfig(familyId).get("sessionMinutes");
         long id = insertSession(req.profileId(), 5, "DATE_ADD(NOW(), INTERVAL " + sessionMin + " MINUTE)");
         jt.update("INSERT INTO alarm(family_id, type, title, content) VALUES(?,?,?,?)",
@@ -147,7 +147,7 @@ public class ControlController {
     public Map<String, Object> parentRevoke(@RequestHeader("Authorization") String auth, @RequestBody ParentActionReq req) {
         long familyId = parentClaims(auth);
         if (req.profileId() == null || !profileInFamily(req.profileId(), familyId)) throw bad("学生档案不存在");
-        int n = jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE profile_id=? AND state=5", req.profileId());
+        int n = jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE profile_id=? AND state=5 AND is_delete=0", req.profileId());
         jt.update("INSERT INTO alarm(family_id, type, title, content) VALUES(?,?,?,?)",
             familyId, "PARENT_REVOKE", "家长远程收回", "家长已收回该学生的使用会话");
         return ok(Map.of("revoked", n > 0));

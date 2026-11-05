@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Button, message, Tag, Space, Drawer, Descriptions } from 'antd'
+import { Table, Button, message, Tag, Space, Drawer, Descriptions, Popconfirm } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { apiFetch } from '../../auth'
 import { subjectName } from '../../components/names'
@@ -29,6 +29,11 @@ export default function Review() {
     if (r.ok) { message.success(pass ? '已通过' : '已驳回'); load() } else message.error('裁决失败')
   }
 
+  const remove = async (id: number) => {
+    const r = await apiFetch(`/api/ops/review/tickets/${id}`, { method: 'DELETE' })
+    if (r.ok) { message.success('已删除'); load() } else message.error('删除失败')
+  }
+
   const cols: ColumnsType<any> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '家庭ID', dataIndex: 'familyId', width: 80 },
@@ -37,11 +42,14 @@ export default function Review() {
     { title: '题干', dataIndex: 'stem', ellipsis: true },
     { title: '命中原因', dataIndex: 'reason', ellipsis: true },
     { title: '提交时间', dataIndex: 'createdAt', width: 160 },
-    { title: '操作', width: 180, render: (_, r) => (
+    { title: '操作', width: 220, render: (_, r) => (
       <Space size={4} wrap>
         <Button size="small" type="link" onClick={() => setView(r)}>查看</Button>
         <Button size="small" type="primary" onClick={() => decide(r.id, true)}>通过</Button>
         <Button size="small" danger onClick={() => decide(r.id, false)}>驳回</Button>
+        <Popconfirm title="逻辑删除该灰词题目？" onConfirm={() => remove(r.id)}>
+          <Button size="small" type="link" danger>删除</Button>
+        </Popconfirm>
       </Space>
     ) },
   ]

@@ -50,7 +50,7 @@ public class OpsController {
         boolean ok;
         if (hash.startsWith("PLAIN:")) {
             ok = hash.substring(6).equals(req.password());
-            if (ok) jt.update("UPDATE admin_user SET password_hash=? WHERE id=?",
+            if (ok) jt.update("UPDATE admin_user SET password_hash=? WHERE id=? AND is_delete=0",
                 new BCryptPasswordEncoder().encode(req.password()), row.get("id")); // 升级为 bcrypt
         } else {
             ok = new BCryptPasswordEncoder().matches(req.password() == null ? "" : req.password(), hash);
@@ -189,7 +189,7 @@ public class OpsController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "非法配置键");
         String value = body.get("value");
         if (value == null || !value.matches("^\\d{1,8}$")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "值须为数字");
-        int n = db.sql("UPDATE sys_config SET config_value=? WHERE config_key=?").param(value).param(key).update();
+        int n = db.sql("UPDATE sys_config SET config_value=? WHERE config_key=? AND is_delete=0").param(value).param(key).update();
         if (n == 0) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "配置键不存在");
         return ok(Map.of("key", key, "value", value));
     }
@@ -219,10 +219,18 @@ public class OpsController {
 
     @PostMapping("/review/tickets/{id}/decide")
     public Map<String, Object> reviewDecide(@PathVariable Long id, @RequestBody ReviewDecideReq req) {
-        int n = jt.update("UPDATE question SET review_status=?, review_reason=? WHERE id=? AND review_status=1",
+        int n = jt.update("UPDATE question SET review_status=?, review_reason=? WHERE id=? AND review_status=1 AND is_delete=0",
             req.pass() ? 0 : 2, (req.pass() ? "人工复核通过" : "人工复核驳回: " + req.reason()), id);
         if (n == 0) throw bad("工单不存在或已裁决");
         return ok(Map.of("decided", true));
+    }
+
+    // ---------- W6.1 复核工单 逻辑删除（直接移除灰词题目） ----------
+    @DeleteMapping("/review/tickets/{id}")
+    public Map<String, Object> deleteReviewTicket(@PathVariable Long id) {
+        int n = jt.update("UPDATE question SET is_delete=1 WHERE id=? AND is_delete=0 AND review_status=1", id);
+        if (n == 0) throw bad("工单不存在或已裁决");
+        return ok(Map.of("deleted", true));
     }
 
     // ---------- W6.2 客服申诉工单（FR-W15/16，CS/ADMIN 写） ----------
@@ -255,7 +263,7 @@ public class OpsController {
         var ticket = db.sql("SELECT task_id FROM appeal_ticket WHERE is_delete=0 AND id=? AND status=0").param(id)
             .query((rs, i) -> rs.getObject("task_id")).optional().orElse(null);
         if (ticket == null) throw bad("工单不存在或已裁决");
-        jt.update("UPDATE appeal_ticket SET status=?, decision=? WHERE id=?",
+        jt.update("UPDATE appeal_ticket SET status=?, decision=? WHERE id=? AND is_delete=0",
             req.approve() ? 2 : 3, req.decision(), id);
         if (req.approve() && ticket instanceof Number taskIdNum) {
             // 撤销判废：恢复任务有效并按达标处理（积分补偿 TODO）
@@ -305,7 +313,7 @@ public class OpsController {
         var exist = db.sql("SELECT id FROM family_account WHERE phone_hash=? AND is_delete=0").param(hash).query(Long.class).optional().orElse(null);
         if (exist != null) throw bad("该手机号已注册家庭");
         long id = insertFamily(req.phone(), hash, req.password());
-        if (req.kyc() != null) jt.update("UPDATE family_account SET kyc_status=? WHERE id=?", req.kyc() == 1 ? 1 : 0, id);
+        if (req.kyc() != null) jt.update("UPDATE family_account SET kyc_status=? WHERE id=? AND is_delete=0", req.kyc() == 1 ? 1 : 0, id);
         return ok(Map.of("id", id));
     }
 
@@ -432,7 +440,7 @@ public class OpsController {
 
     @PostMapping("/orders/{orderNo}/refund")
     public Map<String, Object> refundOrder(@PathVariable String orderNo) {
-        int n = jt.update("UPDATE vip_order SET status=5, refund_at=NOW() WHERE order_no=? AND status=2", orderNo);
+        int n = jt.update("UPDATE vip_order SET status=5, refund_at=NOW() WHERE order_no=? AND status=2 AND is_delete=0", orderNo);
         if (n == 0) throw bad("仅已发货订单可后台退款");
         return ok(Map.of("refunded", true));
     }
@@ -490,6 +498,14 @@ public class OpsController {
         if (!java.util.Set.of("ADMIN", "REVIEWER", "CS").contains(req.role())) throw bad("角色须为 ADMIN/REVIEWER/CS");
         Integer dup = db.sql("SELECT COUNT(*) FROM admin_user WHERE username=? AND is_delete=0").param(req.username()).query(Integer.class).single();
         if (dup > 0) throw bad("用户名已存在");
+        // 曾被逻辑删除的同名账号 → 复用原行并复活，避免 uk_username 唯一键冲突
+        Long existAdmin = db.sql("SELECT id FROM admin_user WHERE username=?")
+            .param(req.username()).query(Long.class).optional().orElse(null);
+        if (existAdmin != null) {
+            jt.update("UPDATE admin_user SET password_hash=?, role=?, status=1, is_delete=0 WHERE id=?",
+                new BCryptPasswordEncoder().encode(req.password()), req.role(), existAdmin);
+            return ok(Map.of("id", existAdmin));
+        }
         KeyHolder kh = new GeneratedKeyHolder();
         jt.update(con -> {
             PreparedStatement ps = con.prepareStatement(
@@ -508,11 +524,11 @@ public class OpsController {
         var exist = db.sql("SELECT id FROM admin_user WHERE id=? AND is_delete=0").param(id).query(Long.class).optional().orElse(null);
         if (exist == null) throw bad("管理员不存在");
         if (req.role() != null)
-            jt.update("UPDATE admin_user SET role=? WHERE id=?", req.role(), id);
+            jt.update("UPDATE admin_user SET role=? WHERE id=? AND is_delete=0", req.role(), id);
         if (req.status() != null)
-            jt.update("UPDATE admin_user SET status=? WHERE id=?", req.status(), id);
+            jt.update("UPDATE admin_user SET status=? WHERE id=? AND is_delete=0", req.status(), id);
         if (req.password() != null && req.password().length() >= 6)
-            jt.update("UPDATE admin_user SET password_hash=? WHERE id=?", new BCryptPasswordEncoder().encode(req.password()), id);
+            jt.update("UPDATE admin_user SET password_hash=? WHERE id=? AND is_delete=0", new BCryptPasswordEncoder().encode(req.password()), id);
         return ok(Map.of("updated", true));
     }
 
@@ -533,13 +549,22 @@ public class OpsController {
     }
 
     private long insertFamily(String phone, String hash, String password) {
+        byte[] phoneEnc = phone.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String pwdHash = "PLAIN:" + password;
+        // 该手机号所属家庭曾被逻辑删除 → 复用原行并复活，避免 uk_phone_hash 唯一键冲突
+        Long exist = db.sql("SELECT id FROM family_account WHERE phone_hash=?").param(hash)
+            .query(Long.class).optional().orElse(null);
+        if (exist != null) {
+            jt.update("UPDATE family_account SET phone_enc=?, parent_pwd_hash=?, is_delete=0 WHERE id=?", phoneEnc, pwdHash, exist);
+            return exist;
+        }
         KeyHolder kh = new GeneratedKeyHolder();
         jt.update(con -> {
             PreparedStatement ps = con.prepareStatement(
                 "INSERT INTO family_account(phone_enc, phone_hash, parent_pwd_hash) VALUES(?,?,?)", Statement.RETURN_GENERATED_KEYS);
-            ps.setBytes(1, phone.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            ps.setBytes(1, phoneEnc);
             ps.setString(2, hash);
-            ps.setString(3, "PLAIN:" + password);
+            ps.setString(3, pwdHash);
             return ps;
         }, kh);
         return kh.getKey().longValue();

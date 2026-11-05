@@ -224,7 +224,7 @@ public class BankStoreController {
         if (owned != pids.size()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "子女不属于当前家庭");
         for (Long pid : pids)
             jt.update("INSERT INTO family_bank_assign(family_id, store_item_id, profile_id, status) VALUES(?,?,?,1) " +
-                "ON DUPLICATE KEY UPDATE status=1, assigned_at=NOW()", familyId, storeId, pid);
+                "ON DUPLICATE KEY UPDATE status=1, assigned_at=NOW(), is_delete=0", familyId, storeId, pid);
         return ok(Map.of("assigned", pids));
     }
 

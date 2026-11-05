@@ -117,11 +117,12 @@ public class AuthController {
         db.sql("UPDATE device_bind SET bind_status=0 WHERE profile_id=? AND device_mode=1 AND is_delete=0")
             .param(profileId).update(); // 旧学生模式设备下线（互踢，FR-34）
         byte[] fp = req.deviceFingerprint().getBytes(StandardCharsets.UTF_8);
-        Long exist = db.sql("SELECT id FROM device_bind WHERE device_fingerprint=? AND device_mode=1 AND is_delete=0")
+        Long exist = db.sql("SELECT id FROM device_bind WHERE device_fingerprint=? AND device_mode=1")
             .param(fp).query(Long.class).optional().orElse(null);
         Long bindId;
         if (exist != null) {
-            jt.update("UPDATE device_bind SET bind_status=1, profile_id=?, device_name=? WHERE id=?",
+            // 该指纹曾被逻辑删除 → 复用原行并复活（避免 uk_fingerprint_mode 唯一键冲突）
+            jt.update("UPDATE device_bind SET bind_status=1, profile_id=?, device_name=?, is_delete=0 WHERE id=?",
                 profileId, req.deviceName(), exist);
             bindId = exist;
         } else {
@@ -156,7 +157,7 @@ public class AuthController {
         boolean has = hash != null && !hash.isBlank();
         if (has && (req.oldPassword() == null || !encoder.matches(req.oldPassword(), hash)))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "原操作密码错误，无法修改");
-        jt.update("UPDATE family_account SET parent_pwd_hash=? WHERE id=?", encoder.encode(req.password()), familyId);
+        jt.update("UPDATE family_account SET parent_pwd_hash=? WHERE id=? AND is_delete=0", encoder.encode(req.password()), familyId);
         return ok(Map.of("set", true, "mode", has ? "modified" : "created"));
     }
 

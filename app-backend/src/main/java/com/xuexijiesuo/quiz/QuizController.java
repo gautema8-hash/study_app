@@ -224,7 +224,7 @@ public class QuizController {
             score = (int) Math.round(correct * 100.0 / Math.max(total, 1));
             result = score >= threshold ? 1 : 2;
         }
-        int updated = jt.update("UPDATE quiz_task SET score=?, result=?, abnormal_flag=?, submitted_at=NOW() WHERE id=? AND result=0",
+        int updated = jt.update("UPDATE quiz_task SET score=?, result=?, abnormal_flag=?, submitted_at=NOW() WHERE id=? AND result=0 AND is_delete=0",
             score, result, abnormalFast >= 3 ? 1 : 0, req.taskId());
         if (updated == 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "任务已判分（并发幂等保护）");
         if (result == 3) { // T-06 判废 → 双写风控事件与家长告警（FR-13/14）

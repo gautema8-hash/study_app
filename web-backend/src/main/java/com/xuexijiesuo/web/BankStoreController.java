@@ -122,10 +122,10 @@ public class BankStoreController {
     @Transactional
     public Map<String, Object> update(@PathVariable Long id, @RequestBody ItemUpsert req) {
         List<Long> qids = validate(req);
-        int n = jt.update("UPDATE bank_store_item SET title=?, description=?, subject=?, grade=? WHERE id=? AND status IN (0,3,4)",
+        int n = jt.update("UPDATE bank_store_item SET title=?, description=?, subject=?, grade=? WHERE id=? AND status IN (0,3,4) AND is_delete=0",
             req.title().trim(), req.description(), req.subject(), req.grade(), id);
         if (n == 0) throw bad("题库不存在或当前状态不可编辑");
-        jt.update("DELETE FROM bank_store_question WHERE store_item_id=?", id);
+        jt.update("UPDATE bank_store_question SET is_delete=1 WHERE store_item_id=? AND is_delete=0", id);
         saveQuestions(id, qids);
         return ok(Map.of("updated", true));
     }
@@ -133,7 +133,7 @@ public class BankStoreController {
     // ---------- FR-S03 提交审核（0/3/4 → 1） ----------
     @PostMapping("/items/{id}/submit")
     public Map<String, Object> submit(@PathVariable Long id) {
-        int n = jt.update("UPDATE bank_store_item SET status=1, review_reason=NULL WHERE id=? AND status IN (0,3,4)", id);
+        int n = jt.update("UPDATE bank_store_item SET status=1, review_reason=NULL WHERE id=? AND status IN (0,3,4) AND is_delete=0", id);
         if (n == 0) throw bad("仅草稿/下架/驳回状态可提交审核");
         return ok(Map.of("submitted", true));
     }
@@ -150,11 +150,11 @@ public class BankStoreController {
                     "WHERE b.store_item_id=? AND b.is_delete=0 AND q.is_delete=0 AND (q.family_id IS NOT NULL OR q.status<>1 OR q.review_status<>0)")
                 .param(id).query(Integer.class).single();
             if (badCount > 0) throw bad("题包含 %d 道非内置/未上架/机审未过题目，不可上架".formatted(badCount));
-            int n = jt.update("UPDATE bank_store_item SET status=2, reviewed_by=?, reviewed_at=NOW(), review_reason=NULL, published_at=NOW() WHERE id=? AND status=1", adminId, id);
+            int n = jt.update("UPDATE bank_store_item SET status=2, reviewed_by=?, reviewed_at=NOW(), review_reason=NULL, published_at=NOW() WHERE id=? AND status=1 AND is_delete=0", adminId, id);
             if (n == 0) throw bad("仅待审核状态可裁决");
         } else {
             if (req.reason() == null || req.reason().isBlank()) throw bad("驳回必须填写原因");
-            int n = jt.update("UPDATE bank_store_item SET status=4, reviewed_by=?, reviewed_at=NOW(), review_reason=? WHERE id=? AND status=1", adminId, req.reason().trim(), id);
+            int n = jt.update("UPDATE bank_store_item SET status=4, reviewed_by=?, reviewed_at=NOW(), review_reason=? WHERE id=? AND status=1 AND is_delete=0", adminId, req.reason().trim(), id);
             if (n == 0) throw bad("仅待审核状态可裁决");
         }
         return ok(Map.of("decided", true));
@@ -163,7 +163,7 @@ public class BankStoreController {
     // ---------- FR-S05 下架（2 → 3） ----------
     @PostMapping("/items/{id}/offline")
     public Map<String, Object> offline(@PathVariable Long id) {
-        int n = jt.update("UPDATE bank_store_item SET status=3 WHERE id=? AND status=2", id);
+        int n = jt.update("UPDATE bank_store_item SET status=3 WHERE id=? AND status=2 AND is_delete=0", id);
         if (n == 0) throw bad("仅已上架题库可下架");
         return ok(Map.of("offline", true));
     }
@@ -189,8 +189,8 @@ public class BankStoreController {
                 .params(tagIds).query(Long.class).single();
             if (hit != tagIds.size()) throw bad("存在无效标签");
         }
-        jt.update("DELETE FROM bank_store_item_tag WHERE store_item_id=?", id);
-        for (Long tagId : tagIds) jt.update("INSERT INTO bank_store_item_tag(store_item_id, tag_id) VALUES(?,?)", id, tagId);
+        jt.update("UPDATE bank_store_item_tag SET is_delete=1 WHERE store_item_id=? AND is_delete=0", id);
+        for (Long tagId : tagIds) jt.update("INSERT INTO bank_store_item_tag(store_item_id, tag_id) VALUES(?,?) ON DUPLICATE KEY UPDATE is_delete=0", id, tagId);
         return ok(Map.of("tagIds", tagIds));
     }
 
@@ -241,7 +241,7 @@ public class BankStoreController {
 
     private void saveQuestions(long itemId, List<Long> qids) {
         for (int i = 0; i < qids.size(); i++)
-            jt.update("INSERT IGNORE INTO bank_store_question(store_item_id, question_id, sort_no) VALUES(?,?,?)", itemId, qids.get(i), i);
+            jt.update("INSERT INTO bank_store_question(store_item_id, question_id, sort_no) VALUES(?,?,?) ON DUPLICATE KEY UPDATE is_delete=0, sort_no=VALUES(sort_no)", itemId, qids.get(i), i);
     }
 
     /** 管理员身份由 AdminAuthInterceptor 注入（写操作强制），读接口仅审计用途 */
