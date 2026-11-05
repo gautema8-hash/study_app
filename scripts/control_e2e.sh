@@ -59,7 +59,12 @@ req -X POST "$BASE/api/control/parent/revoke" -H "Authorization: Bearer $PTOKEN"
 req "$BASE/api/control/session/current" -H "Authorization: Bearer $STOKEN"; echo
 
 echo "== 9.家长紧急解锁(密码123456) =="
-req -X POST "$BASE/api/auth/password/parent" -H "Authorization: Bearer $PTOKEN" -d '{"password":"123456"}' > /dev/null
+HAS=$(req "$BASE/api/auth/password/parent/status" -H "Authorization: Bearer $PTOKEN" | python -c "import json,sys; print('true' if json.load(sys.stdin)['data']['hasPassword'] else 'false')")
+if [ "$HAS" = "true" ]; then
+  req -X POST "$BASE/api/auth/password/parent" -H "Authorization: Bearer $PTOKEN" -d '{"password":"123456","oldPassword":"123456"}' > /dev/null
+else
+  req -X POST "$BASE/api/auth/password/parent" -H "Authorization: Bearer $PTOKEN" -d '{"password":"123456"}' > /dev/null
+fi
 req -X POST "$BASE/api/control/parent/unlock" -H "Authorization: Bearer $PTOKEN" -d "{\"profileId\":$PROFILEID,\"password\":\"123456\"}"; echo
 echo "错误密码应403: $(code -X POST "$BASE/api/control/parent/unlock" -H "Authorization: Bearer $PTOKEN" -d "{\"profileId\":$PROFILEID,\"password\":\"999999\"}")"
 

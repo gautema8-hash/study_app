@@ -44,7 +44,7 @@ public class AuthController {
     public record IdentityReq(String scope, Long profileId) {}
     public record BindCodeReq(String nickname, Integer grade) {}
     public record StudentBindReq(String bindCode, String deviceFingerprint, String deviceName, Integer osType) {}
-    public record ParentPwdReq(String password) {}
+    public record ParentPwdReq(String password, String oldPassword) {}
 
     // 1. 发送短信验证码（开发模式回显 devCode）
     @PostMapping("/sms/send")
@@ -134,12 +134,30 @@ public class AuthController {
     }
 
     // 7. 家长操作密码（6位，独立于登录凭证，FR-35；孩子设备不存密码）
+    // 密码状态：供客户端决定展示「设置」还是「修改」，避免要求输入密码却没有设置入口
+    @GetMapping("/password/parent/status")
+    public Map<String, Object> parentPwdStatus(@RequestHeader("Authorization") String auth) {
+        long familyId = requireFamily(auth);
+        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=?").param(familyId)
+            .query(String.class).optional().orElse(null);
+        return ok(Map.of("hasPassword", hash != null && !hash.isBlank()));
+    }
+
     @PostMapping("/password/parent")
     public Map<String, Object> setParentPwd(@RequestHeader("Authorization") String auth, @RequestBody ParentPwdReq req) {
-        long familyId = requireFamily(auth);
+        // 设置/修改仅允许家长身份，防止孩子端直接改密码绕过身份切换校验
+        TokenService.TokenClaims c = claims(auth);
+        if (!"parent".equals(c.scope()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "仅家长可设置或修改操作密码");
+        long familyId = c.familyId();
         if (req.password() == null || !req.password().matches("^\\d{6}$")) throw bad("操作密码须为6位数字");
+        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=?").param(familyId)
+            .query(String.class).optional().orElse(null);
+        boolean has = hash != null && !hash.isBlank();
+        if (has && (req.oldPassword() == null || !encoder.matches(req.oldPassword(), hash)))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "原操作密码错误，无法修改");
         jt.update("UPDATE family_account SET parent_pwd_hash=? WHERE id=?", encoder.encode(req.password()), familyId);
-        return ok(Map.of("set", true));
+        return ok(Map.of("set", true, "mode", has ? "modified" : "created"));
     }
 
     @PostMapping("/password/parent/verify")

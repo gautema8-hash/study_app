@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../core/ui.dart';
+import '../core/identity.dart';
 
 /// 学生端（锁定态）：达标解锁 → 开始答题；激励中心入口
 class StudentHome extends StatefulWidget {
@@ -43,7 +45,10 @@ class _StudentHomeState extends State<StudentHome> {
     final locked = session == null || session!['locked'] == true;
     final remain = (session?['remainSeconds'] as num?) ?? 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('学习解锁 · 学生'), actions: [
+      backgroundColor: Ui.bg,
+      appBar: uiAppBar(title: '学习解锁 · 学生',
+        leading: uiParentAccessButton(context, UiIdentity.student),
+        actions: [
         IconButton(icon: const Icon(Icons.emoji_events), tooltip: '激励中心',
             onPressed: () => Navigator.pushNamed(context, '/reward')),
       ]),

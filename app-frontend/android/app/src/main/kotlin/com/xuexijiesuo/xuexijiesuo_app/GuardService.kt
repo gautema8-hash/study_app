@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -23,7 +24,10 @@ class GuardService : Service() {
     private val checker = object : Runnable {
         override fun run() {
             if (!childMode()) { stopSelf(); return }
-            if (!isSelfForeground()) bringToFront()
+            if (!isSelfForeground()) {
+                bringToFront()
+                notifyLeave() // 切离时发醒目提醒，点击通知即可回到学习界面
+            }
             handler.postDelayed(this, 3000)
         }
     }
@@ -31,11 +35,7 @@ class GuardService : Service() {
     override fun onCreate() {
         super.onCreate()
         createChannel()
-        startForeground(1, Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("学习解锁 · 孩子端守护")
-            .setContentText("正在保持学习界面")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
-            .build())
+        startForeground(1, buildNotification("学习解锁 · 孩子端守护", "正在保持学习界面"))
         handler.post(checker)
     }
 
@@ -73,6 +73,31 @@ class GuardService : Service() {
         val i = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         try { startActivity(i) } catch (_: Exception) {}
+    }
+
+    private var lastLeaveNotice = 0L
+
+    /** 切离提醒（60 秒节流，避免刷屏），点击通知直接回到孩子端 */
+    private fun notifyLeave() {
+        val now = System.currentTimeMillis()
+        if (now - lastLeaveNotice < 60_000) return
+        lastLeaveNotice = now
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(2, buildNotification("请回到学习解锁", "检测到切离，点击返回学习界面"))
+    }
+
+    private fun buildNotification(title: String, text: String): Notification {
+        val pi = PendingIntent.getActivity(this, 0,
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        return Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+            .setContentIntent(pi)
+            .setOngoing(true)
+            .build()
     }
 
     private fun createChannel() {

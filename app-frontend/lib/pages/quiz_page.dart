@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/kiosk.dart';
+import '../core/ui.dart';
+import '../core/identity.dart';
 
 /// 答题页（FR-12）：切出提醒文案占位；单题作答计时简化为整卷计时
 class QuizPage extends StatefulWidget {
@@ -61,27 +63,37 @@ class _QuizPageState extends State<QuizPage> {
     return PopScope(
       canPop: false, // 孩子端：答题中禁止返回退出（C2）
       child: Scaffold(
-      appBar: AppBar(title: Text('答题 ${index + 1}/${questions.length}'),
-        automaticallyImplyLeading: false,
+      backgroundColor: Ui.bg,
+      appBar: uiAppBar(title: '答题 ${index + 1}/${questions.length}',
+        leading: uiParentAccessButton(context, UiIdentity.student),
         actions: [
-          IconButton(icon: const Icon(Icons.phone), tooltip: '紧急呼叫',
+          IconButton(icon: const Icon(Icons.phone_outlined, color: Ui.primary), tooltip: '紧急呼叫',
               onPressed: () => Kiosk.openDialer('110')),
         ]),
       body: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(q['stem'].toString(), style: Theme.of(context).textTheme.titleLarge),
+        Container(
+          width: double.infinity, padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Ui.surface,
+              borderRadius: BorderRadius.circular(Ui.rCard), boxShadow: [Ui.cardShadow]),
+          child: Text(q['stem'].toString(), style: Ui.title),
+        ),
         const SizedBox(height: 24),
         ...options.map((o) => RadioListTile<String>(
               value: o.split('.').first.trim(), groupValue: answers[qid],
               title: Text(o),
+              activeColor: Ui.primary,
               onChanged: (v) => setState(() => answers[qid] = v ?? ''),
             )),
         const Spacer(),
-        if (tip != null) Text(tip!, style: const TextStyle(color: Colors.red)),
+        if (tip != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: UiBanner(message: tip!, tone: UiTone.error)),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           if (index > 0)
-            OutlinedButton(onPressed: () => setState(() => index--), child: const Text('上一题'))
+            UiButton(label: '上一题', primary: false, onPressed: () => setState(() => index--))
           else const SizedBox(),
           FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Ui.primary,
+                disabledBackgroundColor: Ui.primary.withValues(alpha: 0.45),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Ui.rControl)), elevation: 0),
             onPressed: busy ? null : () {
               if (answers[qid] == null) {
                 setState(() => tip = '请先选择答案');

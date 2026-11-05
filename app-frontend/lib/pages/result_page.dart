@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/ui.dart';
+import '../core/identity.dart';
 
-/// 结果页：得分/达标/积分奖励/勋章（判分响应直达）
+/// 结果页：得分/达标/积分奖励/勋章（判分响应直达），统一视觉与左上角家长入口
 class ResultPage extends StatelessWidget {
   final Map<String, dynamic> result;
   const ResultPage({super.key, required this.result});
@@ -14,27 +16,42 @@ class ResultPage extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Scaffold(
-      appBar: AppBar(title: const Text('判分结果'), automaticallyImplyLeading: false),
-      body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(passed ? Icons.celebration : Icons.sentiment_dissatisfied, size: 96,
-            color: passed ? Colors.green : Colors.orange),
-        const SizedBox(height: 16),
-        Text('${score}分', style: Theme.of(context).textTheme.displayMedium),
-        Text(passed ? '达标！手机已解锁 🎉' : '未达标，再挑战一次吧', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 24),
-        if (reward.isNotEmpty)
-          Card(margin: const EdgeInsets.symmetric(horizontal: 32), child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(children: [
-              Text('获得积分 +${reward['points']}'),
-              Text('连续打卡 ${reward['streak']} 天'),
-              if (medals.isNotEmpty) Text('解锁勋章：${medals.join('、')}'),
-            ]),
-          )),
-        const SizedBox(height: 32),
-        FilledButton(onPressed: () => Navigator.pushReplacementNamed(context, '/gate'),
-            child: const Text('返回')),
-      ])),
+        backgroundColor: Ui.bg,
+        appBar: uiAppBar(title: '判分结果',
+            leading: uiParentAccessButton(context, UiIdentity.student)),
+        body: Center(child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: UiCard(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(passed ? Icons.celebration_rounded : Icons.sentiment_dissatisfied_rounded,
+                  size: 76, color: passed ? Ui.success : Ui.gold),
+              const SizedBox(height: 14),
+              Text('${score}分', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w700, color: Ui.ink)),
+              const SizedBox(height: 6),
+              Text(passed ? '达标！手机已解锁 🎉' : '未达标，再挑战一次吧', style: Ui.section),
+              const SizedBox(height: 20),
+              if (reward.isNotEmpty) ...[
+                Container(
+                  width: double.infinity, padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: Ui.successBg, borderRadius: BorderRadius.circular(12)),
+                  child: Column(children: [
+                    Text('获得积分 +${reward['points']}', style: const TextStyle(color: Ui.success, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Text('连续打卡 ${reward['streak']} 天', style: const TextStyle(color: Ui.success)),
+                    if (medals.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text('解锁勋章：${medals.join('、')}', style: const TextStyle(color: Ui.success)),
+                    ],
+                  ]),
+                ),
+                const SizedBox(height: 20),
+              ],
+              UiButton(label: '返回', onPressed: () => Navigator.pushReplacementNamed(context, '/gate'),
+                  width: double.infinity, icon: Icons.arrow_forward_rounded),
+            ])),
+          ),
+        )),
       ),
     );
   }

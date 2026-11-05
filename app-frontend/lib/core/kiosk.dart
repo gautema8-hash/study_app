@@ -24,4 +24,14 @@ class Kiosk {
   static Future<void> openDialer(String number) async {
     try { await _channel.invokeMethod('openDialer', {'number': number}); } catch (_) {}
   }
+
+  /// 打开系统「默认主屏幕应用」设置，供家长完成一次性守护授权
+  static Future<void> openHomeSettings() async {
+    try { await _channel.invokeMethod('openHomeSettings'); } catch (_) {}
+  }
+
+  /// 打开本应用通知设置，供家长开启切离提醒通知
+  static Future<void> openNotificationSettings() async {
+    try { await _channel.invokeMethod('openNotificationSettings'); } catch (_) {}
+  }
 }

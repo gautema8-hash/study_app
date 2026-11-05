@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../core/ui.dart';
+import '../core/identity.dart';
 
 /// 激励中心（FR-22）：积分/勋章/打卡日历（仅本人数据，无排行无抽奖）
 class RewardPage extends StatefulWidget {
@@ -27,7 +29,8 @@ class _RewardPageState extends State<RewardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('激励中心')),
+      backgroundColor: Ui.bg,
+      appBar: uiAppBar(title: '激励中心', leading: uiParentAccessButton(context, UiIdentity.student)),
       body: RefreshIndicator(
         onRefresh: _load,
         child: d == null
@@ -39,19 +42,19 @@ class _RewardPageState extends State<RewardPage> {
                 _stat('勋章', '${(d!['medals'] as List).length}'),
               ]),
               const SizedBox(height: 16),
-              Text('勋章墙', style: Theme.of(context).textTheme.titleMedium),
+              Text('勋章墙', style: Ui.section),
               const SizedBox(height: 8),
               Wrap(spacing: 8, children: [
                 for (final m in d!['medals'] as List)
-                  Chip(label: Text(_medalName(m['code'].toString()))),
+                  Chip(backgroundColor: Ui.primarySoft, label: Text(_medalName(m['code'].toString()), style: const TextStyle(color: Ui.primary))),
                 if ((d!['medals'] as List).isEmpty) const Text('暂无勋章，答满分解锁第一个吧！'),
               ]),
               const SizedBox(height: 16),
-              Text('打卡日历（近60天）', style: Theme.of(context).textTheme.titleMedium),
+              Text('打卡日历（近60天）', style: Ui.section),
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 for (final day in d!['checkins'] as List)
-                  Chip(label: Text(day.toString().substring(5)), visualDensity: VisualDensity.compact),
+                  Chip(backgroundColor: Ui.primarySoft, label: Text(day.toString().substring(5), style: const TextStyle(color: Ui.primary, fontSize: 12)), visualDensity: VisualDensity.compact),
               ]),
             ]),
       ),
@@ -59,8 +62,8 @@ class _RewardPageState extends State<RewardPage> {
   }
 
   Widget _stat(String label, String value) => Column(children: [
-        Text(value, style: Theme.of(context).textTheme.headlineMedium),
-        Text(label),
+        Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Ui.ink)),
+        Text(label, style: Ui.caption),
       ]);
 
   String _medalName(String code) => switch (code) {
