@@ -21,17 +21,18 @@
 **/ios/Flutter/ephemeral/
 
 # 后端 Java
-backend/target/
+app-backend/target/
+web-backend/target/
 *.class
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 *.log
 hs_err_pid*
 
-# Web (admin-web)
-admin-web/node_modules/
-admin-web/dist/
-admin-web/.umi*/
+# Web (web-frontend)
+web-frontend/node_modules/
+web-frontend/dist/
+web-frontend/.umi*/
 npm-debug.log*
 yarn-error.log
 
@@ -45,4 +46,5 @@ secrets/
 # 系统
 .DS_Store
 Thumbs.db
-backend/src/main/resources/application-local.yml
+app-backend/src/main/resources/application-local.yml
+web-backend/src/main/resources/application-local.yml

@@ -1,6 +1,6 @@
-# backend — 「学习解锁」服务端（Spring Boot 模块化单体）
+# app-backend — 「学习解锁」App 后端（Spring Boot，8080）
 
-> 对应：《学习解锁App-技术架构文档-v1.0.md》§3；《学习解锁Web管理后台-技术架构文档-v1.0.md》§3
+> 对应：《学习解锁App-技术架构文档-v1.0.md》§3；本包**仅含 App 端业务域**，Web 后台接口已拆至 `web-backend/`
 > 技术栈：Java 17（建议升 21）+ Spring Boot 3 + MyBatis-Plus + Redis 7 + RocketMQ + XXL-Job + MySQL 8.0 主从
 > **首次初始化**：用 [start.spring.io](https://start.spring.io) 生成 Spring Boot 3 项目（Maven / Java 17 / 依赖：Web、Security、Validation、MyBatis、Redis、Actuator），将生成结构合并到本目录（pom.xml 放本目录根）。
 
@@ -19,7 +19,7 @@ src/main/java/com/xuexijiesuo/
 ├── member/        # 会员/订单/支付回调补单/退款/对账/资损监控(FR-25~30，资金三件套)
 ├── adreward/      # 广告回调验签、幂等发奖、单日上限(FR-27)
 ├── notify/        # 厂商推送聚合、模板管理
-└── opsbff/        # Web管理后台聚合接口(对应 admin-web 工程)
+
 ```
 
 ## 关键约定（红线，违反即打回）

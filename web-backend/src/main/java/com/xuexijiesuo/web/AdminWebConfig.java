@@ -1,4 +1,4 @@
-package com.xuexijiesuo.config;
+package com.xuexijiesuo.web;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

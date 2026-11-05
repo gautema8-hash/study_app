@@ -70,9 +70,11 @@ try {
   await send('Page.enable'); await send('Runtime.enable')
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
 
-  // 1. 未登录路由守卫：访问工作台应跳登录页
-  await goto('/workbench')
+  // 1. 未登录路由守卫：先清空上次 profile 的 token 并整页重载，确保干净状态
+  await goto('/login')
   await evalJs("localStorage.removeItem('adminToken')")
+  await send('Page.reload')
+  await sleep(1800)
   await goto('/workbench')
   const loginText = await text()
   check('未登录跳登录页', loginText.includes('管理后台登录'), loginText.slice(0, 60).replace(/\n/g, ' '))

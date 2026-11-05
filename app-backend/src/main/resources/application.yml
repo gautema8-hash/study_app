@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: app-backend
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/xuexijiesuo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# JWT 密钥等敏感配置一律走环境变量，禁止写入本文件（安全红线）
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-secret-change-me}
+    access-ttl-minutes: 120
+    refresh-ttl-days: 30

@@ -1,4 +1,4 @@
-# app — 「学习解锁」Flutter 客户端（学生端 + 家长端单工程）
+# app-frontend — 「学习解锁」App 前端（Flutter，学生端 + 家长端单工程）
 
 > 对应：《学习解锁App-技术架构文档-v1.0.md》§2；《学习解锁App-执行计划-v1.0.md》
 > 本目录是 Flutter 工程根。**首次初始化**：在本目录执行 `flutter create --org com.xuexijiesuo --project-name xuexijiesuo_app .`（会生成 android/ios/web 等平台目录，不影响已建好的 lib 子结构，冲突文件注意合并）。

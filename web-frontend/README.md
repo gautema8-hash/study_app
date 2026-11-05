@@ -1,7 +1,7 @@
-# admin-web — 「学习解锁」Web 管理后台（React + Ant Design Pro）
+# web-frontend — 「学习解锁」Web 前端（React + Vite，3100）
 
 > 对应：《学习解锁Web管理后台-技术架构文档-v1.0.md》；后台 PRD 页面清单 W1~W10
-> **首次初始化**：`npx create-umi@latest`（选 Ant Design Pro 模板）或 `npm create vite@latest admin-web -- --template react-ts` 后按 Pro 规范组织；生成后把本骨架合并进去。
+> **首次初始化**：`npx create-umi@latest`（选 Ant Design Pro 模板）或 `npm create vite@latest web-frontend -- --template react-ts` 后按 Pro 规范组织；生成后把本骨架合并进去。
 
 ## 目录结构（对应后台 PRD 页面清单）
 
@@ -20,7 +20,7 @@ src/
 │   ├── setting/        # W9 系统配置（价格双人复核/灰度开关/词库）
 │   └── iam/            # W10 权限管理 + 审计日志检索
 ├── components/         # DualReview双人复核、SensitiveText脱敏、AsyncExport
-└── services/           # API 封装（对接 backend/opsbff 模块）
+└── services/           # API 封装（对接 web-backend（8081，vite /api 代理））
 ```
 
 ## 关键约定

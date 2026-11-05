@@ -3,6 +3,7 @@
 # 用法: bash scripts/review_e2e.sh [base_url]  （PHONE 换号）
 set -e
 BASE="${1:-http://127.0.0.1:8080}"
+WEB_BASE="${WEB_BASE:-http://127.0.0.1:8081}" # web-backend（ops 接口）
 PHONE="${PHONE:-13100001234}"
 
 req() { curl -s --noproxy '*' -H 'Content-Type: application/json' "$@"; }
@@ -34,13 +35,13 @@ assert not any('免费领取' in s for s in stems), '灰词题混入出题池!'
 print('待审题排除OK')"
 
 echo "== 4.admin登录 → 审核通过灰词题 =="
-ALOGIN=$(req -X POST "$BASE/api/ops/auth/login" -d '{"username":"admin","password":"admin123"}')
+ALOGIN=$(req -X POST "$WEB_BASE/api/ops/auth/login" -d '{"username":"admin","password":"admin123"}')
 ATOKEN=$(echo "$ALOGIN" | jqv "['data']['accessToken']")
-TID=$(req "$BASE/api/ops/review/tickets?status=1" -H "Authorization: Bearer $ATOKEN" | python -c "
+TID=$(req "$WEB_BASE/api/ops/review/tickets?status=1" -H "Authorization: Bearer $ATOKEN" | python -c "
 import json,sys
 l=json.load(sys.stdin)['data']['list']
 print([t['id'] for t in l if '免费领取' in t['stem']][0])")
-req -X POST "$BASE/api/ops/review/tickets/$TID/decide" -H "Authorization: Bearer $ATOKEN" -d '{"pass":true,"reason":""}'; echo
+req -X POST "$WEB_BASE/api/ops/review/tickets/$TID/decide" -H "Authorization: Bearer $ATOKEN" -d '{"pass":true,"reason":""}'; echo
 
 echo "== 5.再出2题(通过后的题可入池) =="
 START2=$(req -X POST "$BASE/api/quiz/start" -H "Authorization: Bearer $STOKEN")
@@ -63,10 +64,10 @@ echo "== 7.学生申诉 =="
 req -X POST "$BASE/api/risk/appeal" -H "Authorization: Bearer $STOKEN" -d "{\"taskId\":$TASK2,\"content\":\"网络卡顿导致秒答，非作弊\"}"; echo
 
 echo "== 8.admin撤销判废 → 任务恢复达标 =="
-TICKET=$(req "$BASE/api/ops/tickets?status=0" -H "Authorization: Bearer $ATOKEN" | python -c "
+TICKET=$(req "$WEB_BASE/api/ops/tickets?status=0" -H "Authorization: Bearer $ATOKEN" | python -c "
 import json,sys
 l=json.load(sys.stdin)['data']['list']
 print([t['id'] for t in l if t['taskId']==$TASK2][0])")
-req -X POST "$BASE/api/ops/tickets/$TICKET/decide" -H "Authorization: Bearer $ATOKEN" -d '{"approve":true,"decision":"证据核实"}'; echo
+req -X POST "$WEB_BASE/api/ops/tickets/$TICKET/decide" -H "Authorization: Bearer $ATOKEN" -d '{"approve":true,"decision":"证据核实"}'; echo
 sql "SELECT id, result, score FROM quiz_task WHERE id=$TASK2" | tail -2
 echo "== 内容合规 E2E 完成 =="

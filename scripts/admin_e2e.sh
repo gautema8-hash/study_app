@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Web 管理后台 E2E：10 页数据接口全量 + RBAC 权限矩阵（走 Vite 3100 代理，等同前端请求路径）
+# Web 管理后台 E2E：10 页数据接口全量 + RBAC 权限矩阵（走 Vite 3100 代理 → web-backend 8081，等同前端请求路径）
 # 用法: bash scripts/admin_e2e.sh [base_url]
 set -e
 BASE="${1:-http://127.0.0.1:3100}"

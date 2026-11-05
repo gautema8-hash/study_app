@@ -1,4 +1,4 @@
-package com.xuexijiesuo.opsbff;
+package com.xuexijiesuo.web;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,9 +20,9 @@ public class OpsController {
 
     private final JdbcClient db;
     private final JdbcTemplate jt;
-    private final com.xuexijiesuo.account.TokenService tokens;
+    private final WebTokenService tokens;
 
-    public OpsController(JdbcClient db, JdbcTemplate jt, com.xuexijiesuo.account.TokenService tokens) {
+    public OpsController(JdbcClient db, JdbcTemplate jt, WebTokenService tokens) {
         this.db = db;
         this.jt = jt;
         this.tokens = tokens;

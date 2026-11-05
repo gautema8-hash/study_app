@@ -1,6 +1,5 @@
-package com.xuexijiesuo.config;
+package com.xuexijiesuo.web;
 
-import com.xuexijiesuo.account.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -16,9 +15,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class AdminAuthInterceptor implements HandlerInterceptor {
 
-    private final TokenService tokens;
+    private final WebTokenService tokens;
 
-    public AdminAuthInterceptor(TokenService tokens) {
+    public AdminAuthInterceptor(WebTokenService tokens) {
         this.tokens = tokens;
     }
 
