@@ -45,7 +45,7 @@ public class AdRewardController {
 
         // ② 单日上限（防广告欺诈，规则对家长明示）
         LocalDate today = LocalDate.now();
-        Map<String, Object> acc = db.sql("SELECT daily_granted, daily_date, ad_free_expire_at FROM free_time_account WHERE family_id=?")
+        Map<String, Object> acc = db.sql("SELECT daily_granted, daily_date, ad_free_expire_at FROM free_time_account WHERE family_id=? AND is_delete=0")
             .param(familyId).query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("granted", rs.getInt("daily_granted"));
@@ -80,7 +80,7 @@ public class AdRewardController {
     public Map<String, Object> freetime(@RequestHeader("Authorization") String auth) {
         long familyId = parentClaims(auth);
         Map<String, Object> data = new LinkedHashMap<>();
-        db.sql("SELECT trial_expire_at, ad_free_expire_at, daily_granted, daily_date FROM free_time_account WHERE family_id=?")
+        db.sql("SELECT trial_expire_at, ad_free_expire_at, daily_granted, daily_date FROM free_time_account WHERE family_id=? AND is_delete=0")
             .param(familyId).query((rs, i) -> {
                 data.put("trialExpireAt", rs.getString("trial_expire_at"));
                 data.put("adFreeExpireAt", rs.getString("ad_free_expire_at"));

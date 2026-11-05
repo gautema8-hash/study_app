@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { apiFetch } from '../../auth'
 import {
-  Table, Tag, Select, Space, Button, Input, Modal, Form, message, Popconfirm, Badge, Checkbox,
+  Table, Tag, Select, Space, Button, Input, Modal, Form, message, Popconfirm, Badge, Checkbox, Drawer, Descriptions, Spin,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { SUBJECTS, subjectName, STORE_STATUS, TAG_COLORS } from '../../components/names'
@@ -25,6 +25,8 @@ export default function BankStore() {
   const [tagging, setTagging] = useState<null | { id: number; current: number[] }>(null)
   const [tagForm] = Form.useForm()
   const [newTagOpen, setNewTagOpen] = useState(false)
+  const [view, setView] = useState<any>(null)
+  const [viewLoading, setViewLoading] = useState(false)
 
   const load = useCallback(async (p = page, f = filters) => {
     try {
@@ -52,6 +54,15 @@ export default function BankStore() {
     const r = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
     if (r.status === 400 || r.status === 403) { message.error((await r.json()).message ?? '操作失败'); return false }
     message.success('操作成功'); load(); return true
+  }
+
+  const openView = async (id: number) => {
+    setViewLoading(true); setView({ id })
+    try {
+      const res = await apiFetch(`/api/ops/store/items/${id}`)
+      setView((await res.json()).data)
+    } catch { message.error('加载详情失败') }
+    finally { setViewLoading(false) }
   }
 
   // ---------- 新建/编辑 ----------
@@ -116,11 +127,15 @@ export default function BankStore() {
           <Popconfirm title="下架后家长端即时不可见，确认？" onConfirm={() => post(`/api/ops/store/items/${r.id}/offline`)}>
             <Button size="small" type="link" danger>下架</Button>
           </Popconfirm>)}
+        <Button size="small" type="link" onClick={() => openView(r.id)}>查看</Button>
         <Button size="small" type="link" onClick={async () => {
           const res = await apiFetch(`/api/ops/store/items/${r.id}`)
           const d = (await res.json()).data
           setTagging({ id: r.id, current: d.tagIds })
         }}>打标签</Button>
+        <Popconfirm title="逻辑删除后家长端不可见，确认？" onConfirm={() => post(`/api/ops/store/items/${r.id}`, undefined, 'DELETE')}>
+          <Button size="small" type="link" danger>删除</Button>
+        </Popconfirm>
       </Space>
     ) },
   ]
@@ -236,8 +251,34 @@ export default function BankStore() {
           <Form.Item name="color" label="颜色" initialValue="blue">
             <Select options={TAG_COLORS.map((c) => ({ value: c, label: c }))} />
           </Form.Item>
-        </Form>
+          </Form>
       </Modal>
+
+      {/* 查看详情 */}
+      <Drawer title={`题库详情 #${view?.id ?? ''}`} open={!!view} onClose={() => setView(null)} width={560}>
+        <Spin spinning={viewLoading}>
+          {view && (
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="名称">{view.title}</Descriptions.Item>
+              <Descriptions.Item label="简介">{view.description || '-'}</Descriptions.Item>
+              <Descriptions.Item label="科目/年级">{subjectName(view.subject)} / {view.grade}年级</Descriptions.Item>
+              <Descriptions.Item label="题量">{view.questionCount}</Descriptions.Item>
+              <Descriptions.Item label="下载量">{view.downloadCount}</Descriptions.Item>
+              <Descriptions.Item label="状态">{(STORE_STATUS[view.status as number] ?? { text: view.status }).text}</Descriptions.Item>
+              <Descriptions.Item label="标签">
+                {view.tagIds?.length
+                  ? view.tagIds.map((id: number) => {
+                      const t = tags.find((x) => x.id === id)
+                      return <Tag key={id} color={t?.color}>{t?.name ?? id}</Tag>
+                    })
+                  : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间">{view.createdAt || '-'}</Descriptions.Item>
+              {view.reviewReason && <Descriptions.Item label="审核信息">{view.reviewReason}</Descriptions.Item>}
+            </Descriptions>
+          )}
+        </Spin>
+      </Drawer>
     </div>
   )
 }

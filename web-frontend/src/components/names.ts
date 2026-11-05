@@ -4,6 +4,8 @@ export const subjectName = (v: number) => SUBJECTS[v - 1] ?? v
 
 export const SKU_NAMES: Record<number, string> = { 1: '月卡', 2: '年卡', 3: 'VIP永久', 4: 'SVIP永久' }
 export const TIER_NAMES: Record<number, string> = { 0: '未开通', 1: 'VIP', 2: 'SVIP' }
+// 支付渠道（与 vip_order.channel 枚举一致）
+export const CHANNEL_NAMES: Record<number, string> = { 0: '未知', 1: '微信', 2: '支付宝', 3: '苹果内购' }
 export const ORDER_STATUS: Record<number, { text: string; color: string }> = {
   0: { text: '待支付', color: 'default' },
   1: { text: '已支付', color: 'processing' },

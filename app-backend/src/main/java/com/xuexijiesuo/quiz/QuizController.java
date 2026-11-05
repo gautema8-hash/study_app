@@ -49,14 +49,14 @@ public class QuizController {
     public Map<String, Object> start(@RequestHeader("Authorization") String auth) {
         TokenService.TokenClaims c = studentClaims(auth);
         long profileId = c.profileId() == null ? throwNoProfile() : c.profileId();
-        Long familyId = db.sql("SELECT family_id FROM student_profile WHERE id=?").param(profileId)
+        Long familyId = db.sql("SELECT family_id FROM student_profile WHERE id=? AND is_delete=0").param(profileId)
             .query(Long.class).optional().orElseThrow(() -> bad("学生档案不存在"));
         Map<String, Object> cfg = configs.loadConfig(familyId); // DIY 配置为唯一来源(FR-08)，不再接受请求参数
         int count = (int) cfg.get("count");
         int durationMin = (int) cfg.get("durationMin");
         int threshold = (int) cfg.get("threshold");
 
-        Integer grade = db.sql("SELECT grade FROM student_profile WHERE id=?").param(profileId)
+        Integer grade = db.sql("SELECT grade FROM student_profile WHERE id=? AND is_delete=0").param(profileId)
             .query(Integer.class).optional().orElseThrow(() -> bad("学生档案不存在"));
 
         List<Map<String, Object>> picked = new ArrayList<>();
@@ -67,7 +67,7 @@ public class QuizController {
         List<Long> wrongIds = db.sql("""
                 SELECT DISTINCT ar.question_id FROM answer_record ar
                 JOIN quiz_task t ON ar.task_id = t.id
-                WHERE t.profile_id=? AND ar.is_correct=0
+                WHERE t.profile_id=? AND ar.is_correct=0 AND ar.is_delete=0 AND t.is_delete=0
                   AND ar.created_at <= NOW() - INTERVAL 3 DAY
                   AND ar.created_at > NOW() - INTERVAL 30 DAY
                 LIMIT ?
@@ -82,11 +82,11 @@ public class QuizController {
         // 新题：排除近 7 天已答（FR-07 去重）与已选错题
         List<Map<String, Object>> fresh = db.sql("""
                 SELECT id, subject, difficulty, q_type, stem, options_json FROM question
-                WHERE status=1 AND review_status=0 AND grade=? AND (family_id=? OR source=1)
+                WHERE status=1 AND review_status=0 AND is_delete=0 AND grade=? AND (family_id=? OR source=1)
                   AND id NOT IN (
                     SELECT ar.question_id FROM answer_record ar
                     JOIN quiz_task t ON ar.task_id=t.id
-                    WHERE t.profile_id=? AND t.created_at > NOW() - INTERVAL 7 DAY)
+                    WHERE t.profile_id=? AND t.is_delete=0 AND ar.is_delete=0 AND t.created_at > NOW() - INTERVAL 7 DAY)
                 ORDER BY RAND() LIMIT ?
                 """)
             .param(grade).param(familyId).param(profileId).param(count - picked.size())
@@ -140,7 +140,7 @@ public class QuizController {
 
     /** 取一道仍在上架且年级匹配的题（错题重练用），不存在返回 null */
     private Map<String, Object> fetchQuestion(long qid, Integer grade, long familyId) {
-        return db.sql("SELECT id, subject, difficulty, q_type, stem, options_json FROM question WHERE id=? AND status=1 AND review_status=0 AND grade=? AND (family_id=? OR source=1)")
+        return db.sql("SELECT id, subject, difficulty, q_type, stem, options_json FROM question WHERE id=? AND status=1 AND review_status=0 AND is_delete=0 AND grade=? AND (family_id=? OR source=1)")
             .param(qid).param(grade).param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -159,7 +159,7 @@ public class QuizController {
         TokenService.TokenClaims c = studentClaims(auth);
         long profileId = c.profileId() == null ? throwNoProfile() : c.profileId();
 
-        Map<String, Object> task = db.sql("SELECT id, profile_id, question_ids, threshold, result FROM quiz_task WHERE id=?")
+        Map<String, Object> task = db.sql("SELECT id, profile_id, question_ids, threshold, result FROM quiz_task WHERE id=? AND is_delete=0")
             .param(req.taskId()).query((rs, i) -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("profileId", rs.getLong("profile_id"));
@@ -181,7 +181,7 @@ public class QuizController {
         Map<Long, Integer> diffs = new HashMap<>();
         Map<Long, String> optionsJson = new HashMap<>();
         for (Long qid : qids) {
-            db.sql("SELECT stem, answer, analysis, difficulty, options_json FROM question WHERE id=?").param(qid)
+            db.sql("SELECT stem, answer, analysis, difficulty, options_json FROM question WHERE id=? AND is_delete=0").param(qid)
                 .query((rs, i) -> {
                     answers.put(qid, rs.getString("answer"));
                     analysis.put(qid, rs.getString("analysis"));

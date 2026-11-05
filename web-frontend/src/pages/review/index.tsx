@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Button, message, Tag } from 'antd'
+import { Table, Button, message, Tag, Space, Drawer, Descriptions } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { apiFetch } from '../../auth'
 import { subjectName } from '../../components/names'
@@ -8,6 +8,7 @@ import { subjectName } from '../../components/names'
 export default function Review() {
   const [list, setList] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [view, setView] = useState<any>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,17 +37,31 @@ export default function Review() {
     { title: '题干', dataIndex: 'stem', ellipsis: true },
     { title: '命中原因', dataIndex: 'reason', ellipsis: true },
     { title: '提交时间', dataIndex: 'createdAt', width: 160 },
-    { title: '操作', width: 150, render: (_, r) => (
-      <>
-        <Button size="small" type="primary" onClick={() => decide(r.id, true)}>通过</Button>{' '}
+    { title: '操作', width: 180, render: (_, r) => (
+      <Space size={4} wrap>
+        <Button size="small" type="link" onClick={() => setView(r)}>查看</Button>
+        <Button size="small" type="primary" onClick={() => decide(r.id, true)}>通过</Button>
         <Button size="small" danger onClick={() => decide(r.id, false)}>驳回</Button>
-      </>
+      </Space>
     ) },
   ]
   return (
     <>
       <Tag style={{ marginBottom: 12 }}>时效要求：P95 ≤ 4 小时（后台 PRD FR-W12）</Tag>
       <Table rowKey="id" columns={cols} dataSource={list} loading={loading} size="small" pagination={false} />
+      <Drawer title={`复核工单 #${view?.id ?? ''}`} open={!!view} onClose={() => setView(null)} width={560}>
+        {view && (
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="ID">{view.id}</Descriptions.Item>
+            <Descriptions.Item label="家庭ID">{view.familyId}</Descriptions.Item>
+            <Descriptions.Item label="科目">{subjectName(view.subject as number)}</Descriptions.Item>
+            <Descriptions.Item label="年级">{view.grade}年级</Descriptions.Item>
+            <Descriptions.Item label="题干">{view.stem}</Descriptions.Item>
+            <Descriptions.Item label="命中原因">{view.reason}</Descriptions.Item>
+            <Descriptions.Item label="提交时间">{view.createdAt}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Drawer>
     </>
   )
 }

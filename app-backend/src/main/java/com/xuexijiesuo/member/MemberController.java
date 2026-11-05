@@ -61,7 +61,7 @@ public class MemberController {
     private int priceOf(int sku) {
         String key = switch (sku) { case 1 -> "sku.month.price"; case 2 -> "sku.year.price";
             case 3 -> "sku.vip.price"; default -> "sku.svip.price"; };
-        return Integer.parseInt(db.sql("SELECT config_value FROM sys_config WHERE config_key=?")
+        return Integer.parseInt(db.sql("SELECT config_value FROM sys_config WHERE config_key=? AND is_delete=0")
             .param(key).query(String.class).optional().orElseThrow(() -> bad("价格未配置:" + key)));
     }
 
@@ -91,13 +91,13 @@ public class MemberController {
     @PostMapping("/pay/markpaid")
     public Map<String, Object> markPaid(@RequestHeader("Authorization") String auth, @RequestBody MarkPaidReq req) {
         parentClaims(auth);
-        int n = jt.update("UPDATE vip_order SET status=1 WHERE order_no=? AND status=0", req.orderNo());
+        int n = jt.update("UPDATE vip_order SET status=1 WHERE order_no=? AND status=0 AND is_delete=0", req.orderNo());
         return ok(Map.of("marked", n > 0));
     }
 
     // ---------- 幂等发货（资金三件套核心，FR-28-2） ----------
     private Map<String, Object> ship(String orderNo, String channelTag) {
-        Map<String, Object> order = db.sql("SELECT id, family_id, sku, amount, status FROM vip_order WHERE order_no=?")
+        Map<String, Object> order = db.sql("SELECT id, family_id, sku, amount, status FROM vip_order WHERE order_no=? AND is_delete=0")
             .param(orderNo).query((rs, i) -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id", rs.getLong("id"));
@@ -118,7 +118,7 @@ public class MemberController {
                 "订单 " + orderNo + " 收到重复发货请求（幂等拦截）");
         }
         String channelOrderNo = channelTag + "-" + orderNo + "-" + System.currentTimeMillis();
-        int updated = jt.update("UPDATE vip_order SET status=2, channel_order_no=?, shipped_at=NOW() WHERE order_no=? AND status IN (0,1)",
+        int updated = jt.update("UPDATE vip_order SET status=2, channel_order_no=?, shipped_at=NOW() WHERE order_no=? AND status IN (0,1) AND is_delete=0",
             channelOrderNo, orderNo);
         if (updated == 0) return ok(Map.of("shipped", true, "idempotent", true)); // 并发保护
         deliver(((Number) order.get("familyId")).longValue(), ((Number) order.get("sku")).intValue());
@@ -129,7 +129,7 @@ public class MemberController {
     private void deliver(long familyId, int sku) {
         int days = SKU_DAYS.get(sku);
         int newTier = SKU_TIER.get(sku);
-        Map<String, Object> cur = db.sql("SELECT tier, expire_at FROM member WHERE family_id=?").param(familyId)
+        Map<String, Object> cur = db.sql("SELECT tier, expire_at FROM member WHERE family_id=? AND is_delete=0").param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("tier", rs.getInt("tier"));
@@ -168,13 +168,13 @@ public class MemberController {
     public Map<String, Object> status(@RequestHeader("Authorization") String auth) {
         long familyId = parentClaims(auth);
         Map<String, Object> data = new LinkedHashMap<>();
-        db.sql("SELECT tier, expire_at FROM member WHERE family_id=?").param(familyId)
+        db.sql("SELECT tier, expire_at FROM member WHERE family_id=? AND is_delete=0").param(familyId)
             .query((rs, i) -> {
                 data.put("tier", rs.getInt("tier"));
                 data.put("expireAt", rs.getString("expire_at"));
                 return data;
             }).optional().orElseGet(() -> { data.put("tier", 0); data.put("expireAt", null); return data; });
-        db.sql("SELECT trial_expire_at, ad_free_expire_at FROM free_time_account WHERE family_id=?").param(familyId)
+        db.sql("SELECT trial_expire_at, ad_free_expire_at FROM free_time_account WHERE family_id=? AND is_delete=0").param(familyId)
             .query((rs, i) -> {
                 data.put("trialExpireAt", rs.getString("trial_expire_at"));
                 data.put("adFreeExpireAt", rs.getString("ad_free_expire_at"));
@@ -189,7 +189,7 @@ public class MemberController {
         long familyId = parentClaims(auth);
         List<Map<String, Object>> list = db.sql("""
                 SELECT order_no, sku, amount, channel, status, created_at, shipped_at FROM vip_order
-                WHERE family_id=? ORDER BY id DESC LIMIT 50
+                WHERE family_id=? AND is_delete=0 ORDER BY id DESC LIMIT 50
                 """).param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -207,10 +207,10 @@ public class MemberController {
     @PostMapping("/refund/mock")
     public Map<String, Object> refundMock(@RequestHeader("Authorization") String auth, @RequestBody RefundReq req) {
         long familyId = parentClaims(auth);
-        int n = jt.update("UPDATE vip_order SET status=5, refund_at=NOW() WHERE order_no=? AND family_id=? AND status=2",
+        int n = jt.update("UPDATE vip_order SET status=5, refund_at=NOW() WHERE order_no=? AND family_id=? AND status=2 AND is_delete=0",
             req.orderNo(), familyId);
         if (n == 0) throw bad("仅已发货订单可退款");
-        jt.update("UPDATE member SET tier=0, expire_at=NOW() WHERE family_id=?", familyId); // TODO: 按剩余天数折算
+        jt.update("UPDATE member SET tier=0, expire_at=NOW() WHERE family_id=? AND is_delete=0", familyId); // TODO: 按剩余天数折算
         jt.update("INSERT INTO alarm(family_id, type, title, content) VALUES(?,?,?,?)",
             familyId, "MEMBER_REFUND", "退款成功", "订单 " + req.orderNo() + " 已退款，会员权益终止");
         return ok(Map.of("refunded", true));
@@ -219,7 +219,7 @@ public class MemberController {
     // ---------- 补单 Job（FR-28-6：已支付未发货 >1 分钟主动发货；生产换 XXL-Job） ----------
     @Scheduled(fixedDelay = 60_000)
     public void replenishJob() {
-        List<String> pendings = db.sql("SELECT order_no FROM vip_order WHERE status=1")
+        List<String> pendings = db.sql("SELECT order_no FROM vip_order WHERE status=1 AND is_delete=0")
             .query((rs, i) -> rs.getString("order_no")).list();
         for (String orderNo : pendings) {
             try {

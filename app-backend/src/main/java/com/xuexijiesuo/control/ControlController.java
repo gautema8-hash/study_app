@@ -48,7 +48,7 @@ public class ControlController {
         // 前置：最近一次判分必须达标（result=1），防跳过答题直接解锁（FR-12）
         Integer lastResult = db.sql("""
                 SELECT t.result FROM quiz_task t
-                WHERE t.profile_id=? AND t.result IN (1,2,3)
+                WHERE t.profile_id=? AND t.result IN (1,2,3) AND t.is_delete=0
                 ORDER BY t.submitted_at DESC LIMIT 1
                 """).param(profileId).query(Integer.class).optional().orElse(null);
         if (lastResult == null || lastResult != 1)
@@ -74,7 +74,7 @@ public class ControlController {
             data.put("locked", true);
             return ok(data);
         }
-        Long remain = db.sql("SELECT TIMESTAMPDIFF(SECOND, NOW(), deadline_at) FROM unlock_session WHERE id=?")
+        Long remain = db.sql("SELECT TIMESTAMPDIFF(SECOND, NOW(), deadline_at) FROM unlock_session WHERE id=? AND is_delete=0")
             .param(s.get("sessionId")).query(Long.class).single();
         if (remain <= 0) { // 到期 → 锁定（服务端时间裁决，防 T-03）
             jt.update("UPDATE unlock_session SET state=1, ended_at=NOW() WHERE id=?", s.get("sessionId"));
@@ -101,7 +101,7 @@ public class ControlController {
                 """, req.deviceFingerprint(), familyId);
         }
         int failOpenHours = Integer.parseInt(
-            db.sql("SELECT config_value FROM sys_config WHERE config_key='failopen.hours'")
+            db.sql("SELECT config_value FROM sys_config WHERE config_key='failopen.hours' AND is_delete=0")
                 .query(String.class).optional().orElse("2"));
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("serverTime", db.sql("SELECT NOW()").query(String.class).single());
@@ -112,12 +112,12 @@ public class ControlController {
     // ---------- fail-open 查询：设备超过阈值无心跳 = 客户端应临时开放（宁可漏管不可错锁） ----------
     @GetMapping("/failopen")
     public Map<String, Object> failOpen(@RequestParam String deviceFingerprint) {
-        var row = db.sql("SELECT TIMESTAMPDIFF(MINUTE, last_heartbeat_at, NOW()) AS mins, bind_status FROM device_bind WHERE device_fingerprint=? AND device_mode=1")
+        var row = db.sql("SELECT TIMESTAMPDIFF(MINUTE, last_heartbeat_at, NOW()) AS mins, bind_status FROM device_bind WHERE device_fingerprint=? AND device_mode=1 AND is_delete=0")
             .param(deviceFingerprint)
             .query((rs, i) -> Map.of("mins", rs.getObject("mins"), "bound", rs.getInt("bind_status")))
             .optional().orElse(null);
         int failOpenHours = Integer.parseInt(
-            db.sql("SELECT config_value FROM sys_config WHERE config_key='failopen.hours'")
+            db.sql("SELECT config_value FROM sys_config WHERE config_key='failopen.hours' AND is_delete=0")
                 .query(String.class).optional().orElse("2"));
         boolean failOpen = row == null || row.get("mins") == null
             || ((Number) row.get("mins")).intValue() >= failOpenHours * 60;
@@ -157,7 +157,7 @@ public class ControlController {
     private Map<String, Object> activeSession(long profileId) {
         return db.sql("""
                 SELECT id, TIMESTAMPDIFF(SECOND, NOW(), deadline_at) AS remain
-                FROM unlock_session WHERE profile_id=? AND state=5 AND deadline_at > NOW()
+                FROM unlock_session WHERE profile_id=? AND state=5 AND deadline_at > NOW() AND is_delete=0
                 ORDER BY id DESC LIMIT 1
                 """).param(profileId)
             .query((rs, i) -> Map.<String, Object>of("sessionId", rs.getLong("id"), "remain", rs.getLong("remain")))
@@ -178,24 +178,24 @@ public class ControlController {
     }
 
     private void verifyParentPwd(long familyId, String password) {
-        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=?").param(familyId)
+        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=? AND is_delete=0").param(familyId)
             .query(String.class).optional().orElse(null);
         if (hash == null || password == null || !encoder.matches(password, hash))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "家长操作密码错误(T-08)"); // TODO: 错5次锁定+告警
     }
 
     private boolean profileInFamily(long profileId, long familyId) {
-        return db.sql("SELECT COUNT(*) FROM student_profile WHERE id=? AND family_id=?")
+        return db.sql("SELECT COUNT(*) FROM student_profile WHERE id=? AND family_id=? AND is_delete=0")
             .param(profileId).param(familyId).query(Long.class).single() > 0;
     }
 
     private long familyOf(long profileId) {
-        return db.sql("SELECT family_id FROM student_profile WHERE id=?").param(profileId)
+        return db.sql("SELECT family_id FROM student_profile WHERE id=? AND is_delete=0").param(profileId)
             .query(Long.class).optional().orElseThrow(() -> bad("学生档案不存在"));
     }
 
     private Map<String, Object> loadConfig(long familyId) {
-        return db.sql("SELECT session_minutes FROM quiz_config WHERE family_id=?").param(familyId)
+        return db.sql("SELECT session_minutes FROM quiz_config WHERE family_id=? AND is_delete=0").param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("sessionMinutes", rs.getInt("session_minutes"));

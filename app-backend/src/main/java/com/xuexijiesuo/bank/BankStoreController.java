@@ -56,12 +56,12 @@ public class BankStoreController {
         long familyId = parentCtx(auth).familyId();
         size = Math.min(size, 100);
         page = Math.max(page, 1);
-        StringBuilder where = new StringBuilder(" WHERE i.status=2");
+        StringBuilder where = new StringBuilder(" WHERE i.is_delete=0 AND i.status=2");
         List<Object> params = new ArrayList<>();
         if (keyword != null && !keyword.isBlank()) { where.append(" AND (i.title LIKE ? OR i.description LIKE ?)"); params.add("%" + keyword.trim() + "%"); params.add("%" + keyword.trim() + "%"); }
         if (subject != null) { where.append(" AND i.subject=?"); params.add(subject); }
         if (grade != null) { where.append(" AND i.grade=?"); params.add(grade); }
-        if (tagId != null) { where.append(" AND EXISTS (SELECT 1 FROM bank_store_item_tag t WHERE t.store_item_id=i.id AND t.tag_id=?)"); params.add(tagId); }
+        if (tagId != null) { where.append(" AND EXISTS (SELECT 1 FROM bank_store_item_tag t WHERE t.store_item_id=i.id AND t.tag_id=? AND t.is_delete=0)"); params.add(tagId); }
         Long total = db.sql("SELECT COUNT(*) FROM bank_store_item i" + where).params(params).query(Long.class).single();
         List<Long> ids = db.sql("SELECT i.id FROM bank_store_item i" + where + " ORDER BY i.download_count DESC, i.id DESC LIMIT ? OFFSET ?")
             .params(params).param(size).param((page - 1) * size)
@@ -71,10 +71,10 @@ public class BankStoreController {
                 SELECT i.id, i.title, i.description, i.subject, i.grade, i.question_count, i.download_count,
                        (f.family_id IS NOT NULL) AS added,
                        (SELECT GROUP_CONCAT(CONCAT(t.name,':',t.color)) FROM bank_store_item_tag it
-                         JOIN bank_store_tag t ON t.id=it.tag_id WHERE it.store_item_id=i.id) AS tags
+                         JOIN bank_store_tag t ON t.id=it.tag_id WHERE it.store_item_id=i.id AND it.is_delete=0 AND t.is_delete=0) AS tags
                 FROM bank_store_item i
-                LEFT JOIN family_bank_store f ON f.store_item_id=i.id AND f.family_id=%d
-                WHERE i.id IN (%s)
+                LEFT JOIN family_bank_store f ON f.store_item_id=i.id AND f.family_id=%d AND f.is_delete=0
+                WHERE i.id IN (%s) AND i.is_delete=0
                 ORDER BY i.download_count DESC, i.id DESC
                 """.formatted(familyId, ids.stream().map(String::valueOf).reduce((a, b) -> a + "," + b).orElse("0")))
             .query((rs, i) -> itemRow(rs, true)).list();
@@ -89,10 +89,10 @@ public class BankStoreController {
                 SELECT i.id, i.title, i.description, i.subject, i.grade, i.question_count, i.download_count,
                        (f.family_id IS NOT NULL) AS added,
                        (SELECT GROUP_CONCAT(CONCAT(t.name,':',t.color)) FROM bank_store_item_tag it
-                         JOIN bank_store_tag t ON t.id=it.tag_id WHERE it.store_item_id=i.id) AS tags
+                         JOIN bank_store_tag t ON t.id=it.tag_id WHERE it.store_item_id=i.id AND it.is_delete=0 AND t.is_delete=0) AS tags
                 FROM bank_store_item i
-                LEFT JOIN family_bank_store f ON f.store_item_id=i.id AND f.family_id=?
-                WHERE i.id=? AND i.status=2
+                LEFT JOIN family_bank_store f ON f.store_item_id=i.id AND f.family_id=? AND f.is_delete=0
+                WHERE i.id=? AND i.status=2 AND i.is_delete=0
                 """).params(List.of(familyId, id))
             .query((rs, i) -> itemRow(rs, true)).list();
         if (rows.isEmpty()) throw bad("题库不存在或已下架");
@@ -100,7 +100,7 @@ public class BankStoreController {
         item.put("questions", db.sql("""
                 SELECT q.stem, q.options_json, q.answer, q.analysis, q.q_type
                 FROM bank_store_question b JOIN question q ON q.id=b.question_id
-                WHERE b.store_item_id=? ORDER BY b.sort_no, b.id
+                WHERE b.store_item_id=? AND b.is_delete=0 AND q.is_delete=0 ORDER BY b.sort_no, b.id
                 """).param(id)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -119,16 +119,16 @@ public class BankStoreController {
     @Transactional
     public Map<String, Object> add(@RequestHeader("Authorization") String auth, @PathVariable Long id) {
         long familyId = parentCtx(auth).familyId();
-        var item = db.sql("SELECT id, subject, grade FROM bank_store_item WHERE id=? AND status=2").param(id)
+        var item = db.sql("SELECT id, subject, grade FROM bank_store_item WHERE id=? AND status=2 AND is_delete=0").param(id)
             .query((rs, i) -> Map.of("id", rs.getLong("id"))).optional().orElse(null);
         if (item == null) throw bad("题库不存在或已下架");
         // 幂等：已添加直接返回（客户端可安全重试）
-        Long existing = db.sql("SELECT id FROM family_bank_store WHERE family_id=? AND store_item_id=?")
+        Long existing = db.sql("SELECT id FROM family_bank_store WHERE family_id=? AND store_item_id=? AND is_delete=0")
             .params(List.of(familyId, id)).query(Long.class).optional().orElse(null);
         if (existing != null) return ok(Map.of("added", false, "familyBankId", existing));
         // 复制题目 → 家庭题库（source=2，出题链路零改动）；逐题插入以精确记录新题 ID 映射
         Long bankId = insertFamilyBank(familyId, id);
-        List<Long> srcIds = db.sql("SELECT question_id FROM bank_store_question WHERE store_item_id=? ORDER BY sort_no, id")
+        List<Long> srcIds = db.sql("SELECT question_id FROM bank_store_question WHERE store_item_id=? AND is_delete=0 ORDER BY sort_no, id")
             .param(id).query((rs, i) -> rs.getLong("question_id")).list();
         int copied = 0;
         for (Long srcId : srcIds) {
@@ -136,7 +136,7 @@ public class BankStoreController {
             jt.update(con -> {
                 PreparedStatement ps = con.prepareStatement(
                     "INSERT INTO question(family_id, subject, grade, difficulty, q_type, stem, options_json, answer, analysis, source, status, review_status) " +
-                    "SELECT ?, subject, grade, difficulty, q_type, stem, options_json, answer, analysis, 2, 1, 0 FROM question q WHERE q.id=?",
+                    "SELECT ?, subject, grade, difficulty, q_type, stem, options_json, answer, analysis, 2, 1, 0 FROM question q WHERE q.id=? AND q.is_delete=0",
                     Statement.RETURN_GENERATED_KEYS);
                 ps.setLong(1, familyId);
                 ps.setLong(2, srcId);
@@ -149,7 +149,7 @@ public class BankStoreController {
                 copied++;
             }
         }
-        if (copied > 0) jt.update("UPDATE bank_store_item SET download_count=download_count+1 WHERE id=?", id); // 仅首次下载计 1
+        if (copied > 0) jt.update("UPDATE bank_store_item SET download_count=download_count+1 WHERE id=? AND is_delete=0", id); // 仅首次下载计 1
         return ok(Map.of("added", true, "familyBankId", bankId, "copied", copied));
     }
 
@@ -161,16 +161,16 @@ public class BankStoreController {
         long familyId = parentCtx(auth).familyId();
         size = Math.min(size, 100);
         page = Math.max(page, 1);
-        String where = " WHERE f.family_id=" + familyId;
+        String where = " WHERE f.family_id=" + familyId + " AND f.is_delete=0";
         Long total = db.sql("SELECT COUNT(*) FROM family_bank_store f" + where).query(Long.class).single();
         List<Map<String, Object>> list = db.sql("""
                 SELECT f.id AS bank_id, f.store_item_id, f.added_at, i.title, i.description, i.subject, i.grade,
                        i.question_count, i.download_count,
                        (SELECT GROUP_CONCAT(t.name) FROM bank_store_item_tag it
-                         JOIN bank_store_tag t ON t.id=it.tag_id WHERE it.store_item_id=i.id) AS tags,
+                         JOIN bank_store_tag t ON t.id=it.tag_id WHERE it.store_item_id=i.id AND it.is_delete=0 AND t.is_delete=0) AS tags,
                        (SELECT GROUP_CONCAT(a.profile_id) FROM family_bank_assign a
-                         WHERE a.store_item_id=f.store_item_id AND a.family_id=f.family_id AND a.status=1) AS assigned
-                FROM family_bank_store f JOIN bank_store_item i ON i.id=f.store_item_id""" + where + " ORDER BY f.id DESC LIMIT ? OFFSET ?")
+                         WHERE a.store_item_id=f.store_item_id AND a.family_id=f.family_id AND a.status=1 AND a.is_delete=0) AS assigned
+                FROM family_bank_store f JOIN bank_store_item i ON i.id=f.store_item_id AND i.is_delete=0""" + where + " ORDER BY f.id DESC LIMIT ? OFFSET ?")
             .param(size).param((page - 1) * size)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -197,7 +197,7 @@ public class BankStoreController {
     @GetMapping("/profiles")
     public Map<String, Object> profiles(@RequestHeader("Authorization") String auth) {
         long familyId = parentCtx(auth).familyId();
-        List<Map<String, Object>> list = db.sql("SELECT id, nickname, grade FROM student_profile WHERE family_id=? AND status=1 ORDER BY id")
+        List<Map<String, Object>> list = db.sql("SELECT id, nickname, grade FROM student_profile WHERE family_id=? AND status=1 AND is_delete=0 ORDER BY id")
             .param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -219,7 +219,7 @@ public class BankStoreController {
         List<Long> pids = req.profileIds() == null ? List.of() : req.profileIds().stream().distinct().toList();
         if (pids.isEmpty() || pids.size() > 10) throw bad("profileIds 须为1-10个");
         String in = "?,".repeat(pids.size() - 1) + "?";
-        Integer owned = db.sql("SELECT COUNT(*) FROM student_profile WHERE family_id=? AND status=1 AND id IN (" + in + ")")
+        Integer owned = db.sql("SELECT COUNT(*) FROM student_profile WHERE family_id=? AND status=1 AND is_delete=0 AND id IN (" + in + ")")
             .params(listOf(familyId, pids)).query(Integer.class).single();
         if (owned != pids.size()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "子女不属于当前家庭");
         for (Long pid : pids)
@@ -234,24 +234,25 @@ public class BankStoreController {
                                         @PathVariable Long profileId) {
         long familyId = parentCtx(auth).familyId();
         assertAdded(familyId, storeId);
-        jt.update("UPDATE family_bank_assign SET status=0 WHERE family_id=? AND store_item_id=? AND profile_id=?",
+        jt.update("UPDATE family_bank_assign SET status=0 WHERE family_id=? AND store_item_id=? AND profile_id=? AND is_delete=0",
             familyId, storeId, profileId);
         return ok(Map.of("unassigned", true));
     }
 
-    // ---------- FR-S12 移除（复制题目进回收站、分配作废、可重新添加） ----------
+    // ---------- FR-S12 移除（逻辑删除：复制题目进回收站、分配作废、可重新添加） ----------
     @DeleteMapping("/mine/{storeId}")
     @Transactional
     public Map<String, Object> remove(@RequestHeader("Authorization") String auth, @PathVariable Long storeId) {
         long familyId = parentCtx(auth).familyId();
-        Long bankId = db.sql("SELECT id FROM family_bank_store WHERE family_id=? AND store_item_id=?")
+        Long bankId = db.sql("SELECT id FROM family_bank_store WHERE family_id=? AND store_item_id=? AND is_delete=0")
             .params(List.of(familyId, storeId)).query(Long.class).optional().orElse(null);
         if (bankId == null) throw bad("尚未添加该题库");
-        jt.update("UPDATE question SET status=3 WHERE family_id=? AND id IN (SELECT question_id FROM family_bank_store_question WHERE family_bank_id=?)",
+        // 家庭题库题目逻辑删除（status=3 回收标记 + is_delete=1 隐藏）
+        jt.update("UPDATE question SET status=3, is_delete=1 WHERE family_id=? AND id IN (SELECT question_id FROM family_bank_store_question WHERE family_bank_id=? AND is_delete=0)",
             familyId, bankId);
-        jt.update("DELETE FROM family_bank_assign WHERE family_id=? AND store_item_id=?", familyId, storeId);
-        jt.update("DELETE FROM family_bank_store_question WHERE family_bank_id=?", bankId);
-        jt.update("DELETE FROM family_bank_store WHERE id=?", bankId);
+        jt.update("UPDATE family_bank_assign SET is_delete=1 WHERE family_id=? AND store_item_id=? AND is_delete=0", familyId, storeId);
+        jt.update("UPDATE family_bank_store_question SET is_delete=1 WHERE family_bank_id=? AND is_delete=0", bankId);
+        jt.update("UPDATE family_bank_store SET is_delete=1 WHERE id=? AND is_delete=0", bankId);
         return ok(Map.of("removed", true));
     }
 
@@ -277,7 +278,7 @@ public class BankStoreController {
     }
 
     private void assertAdded(long familyId, long storeId) {
-        Long bankId = db.sql("SELECT id FROM family_bank_store WHERE family_id=? AND store_item_id=?")
+        Long bankId = db.sql("SELECT id FROM family_bank_store WHERE family_id=? AND store_item_id=? AND is_delete=0")
             .params(List.of(familyId, storeId)).query(Long.class).optional().orElse(null);
         if (bankId == null) throw bad("尚未添加该题库，无法分配");
     }

@@ -60,7 +60,7 @@ public class RiskController {
         long familyId = parentClaims(auth);
         List<Map<String, Object>> list = db.sql("""
                 SELECT id, profile_id, type, detail, created_at FROM risk_event
-                WHERE family_id=? ORDER BY id DESC LIMIT 100
+                WHERE family_id=? AND is_delete=0 ORDER BY id DESC LIMIT 100
                 """).param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -81,7 +81,7 @@ public class RiskController {
         long familyId = parentClaims(auth);
         List<Map<String, Object>> list = db.sql("""
                 SELECT id, type, title, content, read_flag, created_at FROM alarm
-                WHERE family_id=? ORDER BY id DESC LIMIT 50 OFFSET ?
+                WHERE family_id=? AND is_delete=0 ORDER BY id DESC LIMIT 50 OFFSET ?
                 """).param(familyId).param((page - 1) * 50)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
@@ -104,9 +104,9 @@ public class RiskController {
         Object id = body == null ? null : body.get("id");
         int n;
         if (id instanceof Number num) {
-            n = jt.update("UPDATE alarm SET read_flag=1 WHERE family_id=? AND id=?", familyId, num.longValue());
+            n = jt.update("UPDATE alarm SET read_flag=1 WHERE family_id=? AND id=? AND is_delete=0", familyId, num.longValue());
         } else {
-            n = jt.update("UPDATE alarm SET read_flag=1 WHERE family_id=?", familyId);
+            n = jt.update("UPDATE alarm SET read_flag=1 WHERE family_id=? AND is_delete=0", familyId);
         }
         return ok(Map.of("updated", n));
     }

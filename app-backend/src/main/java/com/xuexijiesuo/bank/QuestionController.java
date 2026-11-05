@@ -119,7 +119,7 @@ public class QuestionController {
                                     @RequestParam(defaultValue = "20") Integer size) {
         long familyId = parentCtx(auth).familyId();
         size = Math.min(size, 100);
-        StringBuilder where = new StringBuilder(" WHERE (family_id=? OR (family_id IS NULL AND source=1))");
+        StringBuilder where = new StringBuilder(" WHERE (family_id=? OR (family_id IS NULL AND source=1)) AND is_delete=0");
         List<Object> params = new ArrayList<>(List.of(familyId));
         if (subject != null) { where.append(" AND subject=?"); params.add(subject); }
         if (grade != null) { where.append(" AND grade=?"); params.add(grade); }
@@ -150,7 +150,7 @@ public class QuestionController {
     @DeleteMapping("/questions/{id}")
     public Map<String, Object> recycle(@RequestHeader("Authorization") String auth, @PathVariable Long id) {
         long familyId = parentCtx(auth).familyId();
-        int n = jt.update("UPDATE question SET status=3 WHERE id=? AND family_id=? AND status IN (0,1)", id, familyId);
+        int n = jt.update("UPDATE question SET status=3, is_delete=1 WHERE id=? AND family_id=? AND status IN (0,1) AND is_delete=0", id, familyId);
         if (n == 0) throw bad("题目不存在或不可删除");
         return ok(Map.of("recycled", true));
     }
@@ -158,7 +158,7 @@ public class QuestionController {
     @PostMapping("/questions/{id}/restore")
     public Map<String, Object> restore(@RequestHeader("Authorization") String auth, @PathVariable Long id) {
         long familyId = parentCtx(auth).familyId();
-        int n = jt.update("UPDATE question SET status=1 WHERE id=? AND family_id=? AND status=3", id, familyId);
+        int n = jt.update("UPDATE question SET status=1, is_delete=0 WHERE id=? AND family_id=? AND status=3 AND is_delete=1", id, familyId);
         if (n == 0) throw bad("仅回收站内题目可恢复");
         return ok(Map.of("restored", true));
     }
@@ -195,7 +195,7 @@ public class QuestionController {
     /** 灰词/黑词命中检查（D-02 机审 API 接入前的本地替身） */
     private Map.Entry<Integer, String> grayHit(String text) {
         if (text == null || text.isBlank()) return null;
-        var words = db.sql("SELECT word, level FROM sensitive_word")
+        var words = db.sql("SELECT word, level FROM sensitive_word WHERE is_delete=0")
             .query((rs, i) -> Map.entry(rs.getInt("level"), rs.getString("word"))).list();
         for (var w : words) if (text.contains(w.getValue())) return w;
         return null;

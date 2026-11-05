@@ -33,14 +33,14 @@ public class RewardController {
         long profileId = studentClaims(auth).profileId() == null ? throwNoProfile() : studentClaims(auth).profileId();
         Map<String, Object> data = new LinkedHashMap<>();
 
-        Integer balance = db.sql("SELECT balance FROM point_account WHERE profile_id=?").param(profileId)
+        Integer balance = db.sql("SELECT balance FROM point_account WHERE profile_id=? AND is_delete=0").param(profileId)
             .query(Integer.class).optional().orElse(0);
         data.put("balance", balance);
 
         data.put("streak", rewards.calcStreak(profileId));
 
         List<Map<String, Object>> medals = db.sql("""
-                SELECT medal_code, granted_at FROM profile_medal WHERE profile_id=? ORDER BY granted_at DESC
+                SELECT medal_code, granted_at FROM profile_medal WHERE profile_id=? AND is_delete=0 ORDER BY granted_at DESC
                 """).param(profileId)
             .query((rs, i) -> Map.<String, Object>of(
                 "code", rs.getString("medal_code"),
@@ -48,7 +48,7 @@ public class RewardController {
         data.put("medals", medals);
 
         List<Map<String, Object>> flows = db.sql("""
-                SELECT delta, reason, ref_id, created_at FROM point_flow WHERE profile_id=?
+                SELECT delta, reason, ref_id, created_at FROM point_flow WHERE profile_id=? AND is_delete=0
                 ORDER BY id DESC LIMIT 20
                 """).param(profileId)
             .query((rs, i) -> Map.<String, Object>of(
@@ -60,7 +60,7 @@ public class RewardController {
 
         List<String> checkins = db.sql("""
                 SELECT DATE_FORMAT(checkin_date, '%Y-%m-%d') FROM checkin_record
-                WHERE profile_id=? AND checkin_date >= CURDATE() - INTERVAL 60 DAY ORDER BY checkin_date
+                WHERE profile_id=? AND is_delete=0 AND checkin_date >= CURDATE() - INTERVAL 60 DAY ORDER BY checkin_date
                 """).param(profileId).query(String.class).list();
         data.put("checkins", checkins);
         return ok(data);

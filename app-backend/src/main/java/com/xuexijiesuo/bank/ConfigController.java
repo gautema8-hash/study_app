@@ -68,7 +68,7 @@ public class ConfigController {
 
     // ---------- helpers ----------
     public Map<String, Object> loadConfig(long familyId) {
-        return db.sql("SELECT count, duration_min, threshold, session_minutes, daily_limit FROM quiz_config WHERE family_id=?")
+        return db.sql("SELECT count, duration_min, threshold, session_minutes, daily_limit FROM quiz_config WHERE family_id=? AND is_delete=0")
             .param(familyId)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();

@@ -35,7 +35,7 @@ public class AppealController {
 
         var task = db.sql("""
                 SELECT t.profile_id, s.family_id, t.result FROM quiz_task t
-                JOIN student_profile s ON s.id = t.profile_id WHERE t.id=?
+                JOIN student_profile s ON s.id = t.profile_id AND s.is_delete=0 WHERE t.id=? AND t.is_delete=0
                 """).param(req.taskId())
             .query((rs, i) -> Map.of(
                 "profileId", rs.getObject("profile_id"),

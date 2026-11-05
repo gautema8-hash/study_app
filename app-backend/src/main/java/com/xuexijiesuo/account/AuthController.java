@@ -100,7 +100,7 @@ public class AuthController {
                 "INSERT INTO student_profile(family_id, nickname, grade) VALUES(?,?,?)",
                 familyId, req.nickname(), grade);
         } else {
-            profileId = db.sql("SELECT id FROM student_profile WHERE family_id=? ORDER BY id LIMIT 1")
+            profileId = db.sql("SELECT id FROM student_profile WHERE family_id=? AND is_delete=0 ORDER BY id LIMIT 1")
                 .param(familyId).query(Long.class).optional().orElse(null);
             if (profileId == null) throw bad("请先提供孩子昵称与年级以创建学生档案");
         }
@@ -112,12 +112,12 @@ public class AuthController {
     public Map<String, Object> studentBind(@RequestBody StudentBindReq req) {
         Long familyId = codes.consumeBindCode(req.bindCode());
         if (familyId == null) throw bad("绑定码无效或已过期");
-        Long profileId = db.sql("SELECT id FROM student_profile WHERE family_id=? ORDER BY id LIMIT 1")
+        Long profileId = db.sql("SELECT id FROM student_profile WHERE family_id=? AND is_delete=0 ORDER BY id LIMIT 1")
             .param(familyId).query(Long.class).optional().orElseThrow(() -> bad("家庭无学生档案"));
-        db.sql("UPDATE device_bind SET bind_status=0 WHERE profile_id=? AND device_mode=1")
+        db.sql("UPDATE device_bind SET bind_status=0 WHERE profile_id=? AND device_mode=1 AND is_delete=0")
             .param(profileId).update(); // 旧学生模式设备下线（互踢，FR-34）
         byte[] fp = req.deviceFingerprint().getBytes(StandardCharsets.UTF_8);
-        Long exist = db.sql("SELECT id FROM device_bind WHERE device_fingerprint=? AND device_mode=1")
+        Long exist = db.sql("SELECT id FROM device_bind WHERE device_fingerprint=? AND device_mode=1 AND is_delete=0")
             .param(fp).query(Long.class).optional().orElse(null);
         Long bindId;
         if (exist != null) {
@@ -138,7 +138,7 @@ public class AuthController {
     @GetMapping("/password/parent/status")
     public Map<String, Object> parentPwdStatus(@RequestHeader("Authorization") String auth) {
         long familyId = requireFamily(auth);
-        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=?").param(familyId)
+        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=? AND is_delete=0").param(familyId)
             .query(String.class).optional().orElse(null);
         return ok(Map.of("hasPassword", hash != null && !hash.isBlank()));
     }
@@ -151,7 +151,7 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "仅家长可设置或修改操作密码");
         long familyId = c.familyId();
         if (req.password() == null || !req.password().matches("^\\d{6}$")) throw bad("操作密码须为6位数字");
-        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=?").param(familyId)
+        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=? AND is_delete=0").param(familyId)
             .query(String.class).optional().orElse(null);
         boolean has = hash != null && !hash.isBlank();
         if (has && (req.oldPassword() == null || !encoder.matches(req.oldPassword(), hash)))
@@ -163,7 +163,7 @@ public class AuthController {
     @PostMapping("/password/parent/verify")
     public Map<String, Object> verifyParentPwd(@RequestHeader("Authorization") String auth, @RequestBody ParentPwdReq req) {
         long familyId = requireFamily(auth);
-        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=?").param(familyId)
+        String hash = db.sql("SELECT parent_pwd_hash FROM family_account WHERE id=? AND is_delete=0").param(familyId)
             .query(String.class).optional().orElse(null);
         boolean pass = hash != null && encoder.matches(req.password(), hash);
         if (!pass) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "操作密码错误"); // TODO: 错5次锁30分钟+告警(T-08)
@@ -186,10 +186,12 @@ public class AuthController {
 
     private long upsertFamilyByPhone(String phone) {
         String hash = sha256(phone);
-        var existing = db.sql("SELECT id FROM family_account WHERE phone_hash=?").param(hash)
+        var existing = db.sql("SELECT id FROM family_account WHERE phone_hash=? AND is_delete=0").param(hash)
             .query(Long.class).optional();
         if (existing.isPresent()) return existing.get();
-        return insertAndGetId("INSERT INTO family_account(phone_enc, phone_hash) VALUES(?,?)",
+        // 软删除的家庭重新登录时复用原记录并恢复（避免 phone_hash 唯一键冲突）
+        return insertAndGetId("INSERT INTO family_account(phone_enc, phone_hash) VALUES(?,?) "
+            + "ON DUPLICATE KEY UPDATE is_delete=0, phone_enc=VALUES(phone_enc)",
             phone.getBytes(StandardCharsets.UTF_8), hash); // TODO(W安全迭代): 应用层AES加密替代明文字节
     }
 
@@ -198,7 +200,7 @@ public class AuthController {
         String access = tokens.createAccess(familyId, scope, null, ver);
         String refresh = java.util.UUID.randomUUID().toString().replace("-", "");
         codes.saveRefresh(refresh, familyId);
-        List<Long> profiles = db.sql("SELECT id FROM student_profile WHERE family_id=?")
+        List<Long> profiles = db.sql("SELECT id FROM student_profile WHERE family_id=? AND is_delete=0")
             .param(familyId).query(Long.class).list();
         return Map.of("accessToken", access, "refreshToken", refresh, "familyId", familyId, "profileIds", profiles);
     }
@@ -217,12 +219,12 @@ public class AuthController {
     }
 
     private boolean belongsTo(long profileId, long familyId) {
-        return db.sql("SELECT COUNT(*) FROM student_profile WHERE id=? AND family_id=?")
+        return db.sql("SELECT COUNT(*) FROM student_profile WHERE id=? AND family_id=? AND is_delete=0")
             .param(profileId).param(familyId).query(Long.class).single() > 0;
     }
 
     private long credVersion(long familyId) {
-        return db.sql("SELECT cred_version FROM family_account WHERE id=?").param(familyId)
+        return db.sql("SELECT cred_version FROM family_account WHERE id=? AND is_delete=0").param(familyId)
             .query(Long.class).optional().orElse(1L);
     }
 

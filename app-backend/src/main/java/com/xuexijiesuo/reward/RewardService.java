@@ -36,7 +36,7 @@ public class RewardService {
 
         // 单日获取上限 500（FR-19 防刷）
         int todayPositive = db.sql(
-                "SELECT COALESCE(SUM(delta),0) FROM point_flow WHERE profile_id=? AND delta>0 AND DATE(created_at)=CURDATE()")
+                "SELECT COALESCE(SUM(delta),0) FROM point_flow WHERE profile_id=? AND delta>0 AND is_delete=0 AND DATE(created_at)=CURDATE()")
             .param(profileId).query(Integer.class).single();
         reward = Math.min(reward, Math.max(0, 500 - todayPositive));
 
@@ -77,7 +77,7 @@ public class RewardService {
     /** 连续打卡天数（从今天/昨天回溯连续自然日） */
     public int calcStreak(long profileId) {
         List<LocalDate> dates = db.sql(
-                "SELECT checkin_date FROM checkin_record WHERE profile_id=? ORDER BY checkin_date DESC LIMIT 400")
+                "SELECT checkin_date FROM checkin_record WHERE profile_id=? AND is_delete=0 ORDER BY checkin_date DESC LIMIT 400")
             .param(profileId).query((rs, i) -> rs.getDate("checkin_date").toLocalDate()).list();
         if (dates.isEmpty()) return 0;
         LocalDate cur = LocalDate.now();

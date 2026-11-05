@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Button, Tag, message } from 'antd'
+import { Table, Button, Tag, message, Space, Drawer, Descriptions, Spin, Popconfirm } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { apiFetch } from '../../auth'
 
@@ -13,6 +13,8 @@ const STATUS: Record<number, { text: string; color: string }> = {
 export default function Tickets() {
   const [list, setList] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [view, setView] = useState<any>(null)
+  const [viewLoading, setViewLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -33,6 +35,20 @@ export default function Tickets() {
     if (r.ok) { message.success(approve ? '已撤销判废' : '已驳回'); load() } else message.error('裁决失败')
   }
 
+  const openView = async (id: number) => {
+    setViewLoading(true); setView({ id })
+    try {
+      const res = await apiFetch(`/api/ops/tickets/${id}`)
+      setView((await res.json()).data)
+    } catch { message.error('加载详情失败') }
+    finally { setViewLoading(false) }
+  }
+
+  const remove = async (id: number) => {
+    const r = await apiFetch(`/api/ops/tickets/${id}`, { method: 'DELETE' })
+    if (r.ok) { message.success('已删除'); load() } else message.error('删除失败')
+  }
+
   const cols: ColumnsType<any> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '家庭ID', dataIndex: 'familyId', width: 80 },
@@ -44,17 +60,38 @@ export default function Tickets() {
         return <Tag color={s.color}>{s.text}</Tag>
       } },
     { title: '提交时间', dataIndex: 'createdAt', width: 160 },
-    { title: '操作', width: 150, render: (_, r) => (
-      <>
-        <Button size="small" type="primary" onClick={() => decide(r.id, true)}>撤销判废</Button>{' '}
+    { title: '操作', width: 200, render: (_, r) => (
+      <Space size={4} wrap>
+        <Button size="small" type="link" onClick={() => openView(r.id)}>查看</Button>
+        <Button size="small" type="primary" onClick={() => decide(r.id, true)}>撤销判废</Button>
         <Button size="small" danger onClick={() => decide(r.id, false)}>维持</Button>
-      </>
+        <Popconfirm title="逻辑删除该工单？" onConfirm={() => remove(r.id)}>
+          <Button size="small" type="link" danger>删除</Button>
+        </Popconfirm>
+      </Space>
     ) },
   ]
   return (
     <>
       <Tag style={{ marginBottom: 12 }}>裁决时效：48 小时（后台 PRD FR-W16）</Tag>
       <Table rowKey="id" columns={cols} dataSource={list} loading={loading} size="small" pagination={false} />
+      <Drawer title={`申诉工单 #${view?.id ?? ''}`} open={!!view} onClose={() => setView(null)} width={560}>
+        <Spin spinning={viewLoading}>
+          {view && (
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="ID">{view.id}</Descriptions.Item>
+              <Descriptions.Item label="家庭ID">{view.familyId}</Descriptions.Item>
+              <Descriptions.Item label="学生ID">{view.profileId ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label="任务ID">{view.taskId ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label="类型">{view.type}</Descriptions.Item>
+              <Descriptions.Item label="申诉内容">{view.content}</Descriptions.Item>
+              <Descriptions.Item label="状态">{(STATUS[view.status as number] ?? { text: view.status }).text}</Descriptions.Item>
+              <Descriptions.Item label="裁决意见">{view.decision || '-'}</Descriptions.Item>
+              <Descriptions.Item label="提交时间">{view.createdAt}</Descriptions.Item>
+            </Descriptions>
+          )}
+        </Spin>
+      </Drawer>
     </>
   )
 }

@@ -35,16 +35,16 @@ public class QuizGateController {
     @GetMapping("/gate")
     public Map<String, Object> gate(@RequestHeader("Authorization") String auth) {
         long profileId = studentClaims(auth).profileId() == null ? throwNoProfile() : studentClaims(auth).profileId();
-        long familyId = db.sql("SELECT family_id FROM student_profile WHERE id=?").param(profileId)
+        long familyId = db.sql("SELECT family_id FROM student_profile WHERE id=? AND is_delete=0").param(profileId)
             .query(Long.class).optional().orElseThrow(() -> bad("学生档案不存在"));
         Map<String, Object> d = new LinkedHashMap<>();
 
         // 例外1：会员权益到期 → 按 FR-30 恢复自由使用，禁用强管控
         boolean entitled = db.sql("""
-                SELECT COUNT(*) FROM member WHERE family_id=? AND expire_at > NOW()
+                SELECT COUNT(*) FROM member WHERE family_id=? AND expire_at > NOW() AND is_delete=0
                 """).param(familyId).query(Long.class).single() > 0
             || db.sql("""
-                SELECT COUNT(*) FROM free_time_account WHERE family_id=?
+                SELECT COUNT(*) FROM free_time_account WHERE family_id=? AND is_delete=0
                   AND (trial_expire_at > NOW() OR ad_free_expire_at >= CURDATE())
                 """).param(familyId).query(Long.class).single() > 0;
         if (!entitled) return wait(d, "MEMBER_EXPIRED", "会员/试用已到期，管控已暂停（FR-30）");
@@ -52,7 +52,7 @@ public class QuizGateController {
         // 例外2：已有未到期的使用中会话 → 直达使用中页（开机不重置会话）
         var session = db.sql("""
                 SELECT id, TIMESTAMPDIFF(SECOND, NOW(), deadline_at) AS remain
-                FROM unlock_session WHERE profile_id=? AND state=5 AND deadline_at > NOW()
+                FROM unlock_session WHERE profile_id=? AND state=5 AND deadline_at > NOW() AND is_delete=0
                 ORDER BY id DESC LIMIT 1
                 """).param(profileId)
             .query((rs, i) -> Map.of("id", rs.getLong("id"), "remain", rs.getLong("remain")))
@@ -65,7 +65,7 @@ public class QuizGateController {
 
         // 闭环：最近一次判分达标但会话尚未创建（答题结果页返回）→ 自动解锁并直达使用中页
         Long passedTask = db.sql("""
-                SELECT id FROM quiz_task WHERE profile_id=? AND result=1
+                SELECT id FROM quiz_task WHERE profile_id=? AND result=1 AND is_delete=0
                   AND submitted_at > NOW() - INTERVAL 5 MINUTE
                 ORDER BY submitted_at DESC LIMIT 1
                 """).param(profileId).query(Long.class).optional().orElse(null);
@@ -81,19 +81,19 @@ public class QuizGateController {
         // 例外3：每日挑战次数上限（FR-08）
         Map<String, Object> cfg = configs.loadConfig(familyId);
         int dailyLimit = ((Number) cfg.get("dailyLimit")).intValue();
-        long today = db.sql("SELECT COUNT(*) FROM quiz_task WHERE profile_id=? AND DATE(created_at)=CURDATE()")
+        long today = db.sql("SELECT COUNT(*) FROM quiz_task WHERE profile_id=? AND is_delete=0 AND DATE(created_at)=CURDATE()")
             .param(profileId).query(Long.class).single();
         if (today >= dailyLimit) return wait(d, "DAILY_LIMIT", "今日挑战次数已用完，请明天再试");
 
         // 例外4：题库不足（E-03）→ 等待家长配置，不锁死白屏
-        Integer grade = db.sql("SELECT grade FROM student_profile WHERE id=?").param(profileId)
+        Integer grade = db.sql("SELECT grade FROM student_profile WHERE id=? AND is_delete=0").param(profileId)
             .query(Integer.class).optional().orElse(3);
         long available = db.sql("""
                 SELECT COUNT(*) FROM question
-                WHERE status=1 AND review_status=0 AND grade=? AND (family_id=? OR source=1)
+                WHERE status=1 AND review_status=0 AND is_delete=0 AND grade=? AND (family_id=? OR source=1)
                   AND id NOT IN (SELECT ar.question_id FROM answer_record ar
                     JOIN quiz_task t ON ar.task_id=t.id
-                    WHERE t.profile_id=? AND t.created_at > NOW() - INTERVAL 7 DAY)
+                    WHERE t.profile_id=? AND t.is_delete=0 AND ar.is_delete=0 AND t.created_at > NOW() - INTERVAL 7 DAY)
                 """).param(grade).param(familyId).param(profileId).query(Long.class).single();
         if (available == 0) return wait(d, "NO_QUESTIONS", "题库不足，请家长补充题目后再试(E-03)");
 
