@@ -1,8 +1,11 @@
 package com.xuexijiesuo.opsbff;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -17,6 +20,134 @@ public class OpsController {
 
     public OpsController(JdbcClient db) {
         this.db = db;
+    }
+
+    // ---------- W5.1 用户列表（手机号脱敏，FR-W04） ----------
+    @GetMapping("/users")
+    public Map<String, Object> users(@RequestParam(defaultValue = "1") Integer page,
+                                     @RequestParam(defaultValue = "20") Integer size) {
+        size = Math.min(size, 100);
+        Long total = db.sql("SELECT COUNT(*) FROM family_account").query(Long.class).single();
+        List<Map<String, Object>> list = db.sql("""
+                SELECT f.id, f.phone_enc, f.kyc_status, f.status, f.created_at,
+                       COALESCE(m.tier,0) AS tier, m.expire_at,
+                       (SELECT COUNT(*) FROM student_profile s WHERE s.family_id=f.id) AS students
+                FROM family_account f LEFT JOIN member m ON m.family_id=f.id
+                ORDER BY f.id DESC LIMIT ? OFFSET ?
+                """).param(size).param((page - 1) * size)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("familyId", rs.getLong("id"));
+                byte[] enc = rs.getBytes("phone_enc");
+                String phone = enc == null ? "" : new String(enc, java.nio.charset.StandardCharsets.UTF_8);
+                m.put("phone", phone.length() >= 7 ? phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4) : "***");
+                m.put("kyc", rs.getInt("kyc_status") == 1);
+                m.put("tier", rs.getInt("tier"));
+                m.put("expireAt", rs.getString("expire_at"));
+                m.put("students", rs.getInt("students"));
+                m.put("createdAt", rs.getString("created_at"));
+                return m;
+            }).list();
+        return ok(Map.of("total", total, "list", list));
+    }
+
+    // ---------- W5.2 订单列表（全部家庭，资金台账） ----------
+    @GetMapping("/orders")
+    public Map<String, Object> orders(@RequestParam(defaultValue = "1") Integer page,
+                                      @RequestParam(defaultValue = "20") Integer size) {
+        size = Math.min(size, 100);
+        Long total = db.sql("SELECT COUNT(*) FROM vip_order").query(Long.class).single();
+        List<Map<String, Object>> list = db.sql("""
+                SELECT order_no, family_id, sku, amount, channel, status, created_at, shipped_at
+                FROM vip_order ORDER BY id DESC LIMIT ? OFFSET ?
+                """).param(size).param((page - 1) * size)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("orderNo", rs.getString("order_no"));
+                m.put("familyId", rs.getLong("family_id"));
+                m.put("sku", rs.getInt("sku"));
+                m.put("amount", rs.getInt("amount"));
+                m.put("status", rs.getInt("status"));
+                m.put("createdAt", rs.getString("created_at"));
+                m.put("shippedAt", rs.getString("shipped_at"));
+                return m;
+            }).list();
+        return ok(Map.of("total", total, "list", list));
+    }
+
+    // ---------- W5.3 题库全量列表（内置+自建，FR-W11 运营视角） ----------
+    @GetMapping("/questions")
+    public Map<String, Object> questions(@RequestParam(defaultValue = "1") Integer page,
+                                         @RequestParam(defaultValue = "20") Integer size,
+                                         @RequestParam(required = false) Integer subject,
+                                         @RequestParam(required = false) Integer grade) {
+        size = Math.min(size, 100);
+        StringBuilder where = new StringBuilder(" WHERE status IN (1,2)");
+        List<Object> params = new java.util.ArrayList<>();
+        if (subject != null) { where.append(" AND subject=?"); params.add(subject); }
+        if (grade != null) { where.append(" AND grade=?"); params.add(grade); }
+        Long total = db.sql("SELECT COUNT(*) FROM question" + where).params(params).query(Long.class).single();
+        List<Map<String, Object>> list = db.sql("SELECT id, family_id, subject, grade, difficulty, q_type, stem, source, status, created_at FROM question"
+                + where + " ORDER BY id DESC LIMIT ? OFFSET ?")
+            .params(params).param(size).param((page - 1) * size)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", rs.getLong("id"));
+                m.put("familyId", rs.getObject("family_id"));
+                m.put("subject", rs.getInt("subject"));
+                m.put("grade", rs.getInt("grade"));
+                m.put("difficulty", rs.getInt("difficulty"));
+                m.put("stem", rs.getString("stem"));
+                m.put("source", rs.getInt("source") == 1 ? "内置" : "自建");
+                m.put("status", rs.getInt("status"));
+                m.put("createdAt", rs.getString("created_at"));
+                return m;
+            }).list();
+        return ok(Map.of("total", total, "list", list));
+    }
+
+    // ---------- W5.4 告警列表（全局） ----------
+    @GetMapping("/alarms")
+    public Map<String, Object> alarms(@RequestParam(defaultValue = "1") Integer page) {
+        List<Map<String, Object>> list = db.sql("""
+                SELECT a.id, a.family_id, a.type, a.title, a.content, a.read_flag, a.created_at
+                FROM alarm a ORDER BY a.id DESC LIMIT 50 OFFSET ?
+                """).param((page - 1) * 50)
+            .query((rs, i) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", rs.getLong("id"));
+                m.put("familyId", rs.getLong("family_id"));
+                m.put("type", rs.getString("type"));
+                m.put("title", rs.getString("title"));
+                m.put("content", rs.getString("content"));
+                m.put("read", rs.getInt("read_flag") == 1);
+                m.put("createdAt", rs.getString("created_at"));
+                return m;
+            }).list();
+        return ok(Map.of("list", list));
+    }
+
+    // ---------- W5.5 价格配置（FR-W18：写 sys_config，双人复核与审计 TODO） ----------
+    @GetMapping("/config")
+    public Map<String, Object> config() {
+        Map<String, Object> cfg = new LinkedHashMap<>();
+        db.sql("SELECT config_key, config_value FROM sys_config WHERE config_key LIKE 'sku.%' OR config_key LIKE 'trial%' OR config_key LIKE 'ad.%'")
+            .query((rs, i) -> {
+                cfg.put(rs.getString("config_key"), rs.getString("config_value"));
+                return cfg;
+            }).list(); // JdbcClient 惰性执行：必须终结操作才触发查询
+        return ok(cfg);
+    }
+
+    @PutMapping("/config/{key}")
+    public Map<String, Object> updateConfig(@PathVariable String key, @RequestBody Map<String, String> body) {
+        if (!key.matches("^(sku\\.(month|year|vip|svip)\\.price|trial\\.days|ad\\.daily\\.limit)$"))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "非法配置键");
+        String value = body.get("value");
+        if (value == null || !value.matches("^\\d{1,8}$")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "值须为数字");
+        int n = db.sql("UPDATE sys_config SET config_value=? WHERE config_key=?").param(value).param(key).update();
+        if (n == 0) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "配置键不存在");
+        return ok(Map.of("key", key, "value", value));
     }
 
     @GetMapping("/summary")
