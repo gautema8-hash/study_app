@@ -37,14 +37,25 @@ class _QuizPageState extends State<QuizPage> {
     return const [];
   }
 
+  // 填空题（无选项）作答控制器，按题目ID惰性创建
+  final _fillCtrls = <int, TextEditingController>{};
+  TextEditingController _fillCtrl(int qid) =>
+      _fillCtrls.putIfAbsent(qid, () => TextEditingController(text: answers[qid] ?? ''));
+
+  // 每题首次展示时间戳（毫秒），用于提交时计算作答耗时（T-06 防异常快答误判）
+  final _shownAt = <int, int>{};
+
   Future<void> _submit() async {
     setState(() { busy = true; tip = null; });
     try {
+      final now = DateTime.now().millisecondsSinceEpoch;
       final body = {
         'taskId': taskId,
         'answers': questions.map((q) {
           final qid = (q['id'] as num).toInt();
-          return {'questionId': qid, 'answer': answers[qid] ?? '', 'costMs': 0, 'switchCount': 0};
+          final shown = _shownAt[qid] ?? now;
+          final cost = now - shown;
+          return {'questionId': qid, 'answer': answers[qid] ?? '', 'costMs': cost, 'switchCount': 0};
         }).toList(),
       };
       final r = await Api.post('/api/quiz/submit', body: body);
@@ -59,6 +70,7 @@ class _QuizPageState extends State<QuizPage> {
   Widget build(BuildContext context) {
     final q = questions[index] as Map<String, dynamic>;
     final qid = (q['id'] as num).toInt();
+    _shownAt.putIfAbsent(qid, () => DateTime.now().millisecondsSinceEpoch);
     final options = _options(q);
     return PopScope(
       canPop: false, // 孩子端：答题中禁止返回退出（C2）
@@ -78,12 +90,24 @@ class _QuizPageState extends State<QuizPage> {
           child: Text(q['stem'].toString(), style: Ui.title),
         ),
         const SizedBox(height: 24),
-        ...options.map((o) => RadioListTile<String>(
-              value: o.split('.').first.trim(), groupValue: answers[qid],
-              title: Text(o),
-              activeColor: Ui.primary,
-              onChanged: (v) => setState(() => answers[qid] = v ?? ''),
-            )),
+        if (options.isNotEmpty)
+          ...options.map((o) => RadioListTile<String>(
+                value: o.split('.').first.trim(), groupValue: answers[qid],
+                title: Text(o),
+                activeColor: Ui.primary,
+                onChanged: (v) => setState(() => answers[qid] = v ?? ''),
+              ))
+        else
+          TextField(
+            controller: _fillCtrl(qid),
+            decoration: InputDecoration(
+              hintText: '请在横线上填写答案',
+              filled: true, fillColor: Ui.surface,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(Ui.rCard)),
+            ),
+            style: Ui.title,
+            onChanged: (v) => answers[qid] = v.trim(),
+          ),
         const Spacer(),
         if (tip != null) Padding(padding: const EdgeInsets.only(bottom: 12), child: UiBanner(message: tip!, tone: UiTone.error)),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -95,8 +119,9 @@ class _QuizPageState extends State<QuizPage> {
                 disabledBackgroundColor: Ui.primary.withValues(alpha: 0.45),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Ui.rControl)), elevation: 0),
             onPressed: busy ? null : () {
-              if (answers[qid] == null) {
-                setState(() => tip = '请先选择答案');
+              final cur = answers[qid];
+              if (cur == null || cur.isEmpty) {
+                setState(() => tip = '请先作答本题');
               } else if (index < questions.length - 1) {
                 setState(() { index++; tip = null; });
               } else {

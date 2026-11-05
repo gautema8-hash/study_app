@@ -123,6 +123,17 @@ class _ParentHomeState extends State<ParentHome> {
                   _load();
                 }, icon: Icons.password_rounded),
           ])),
+          const SizedBox(height: 16),
+          UiCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('题库商店', style: Ui.title),
+            const SizedBox(height: 8),
+            Text('浏览运营精选题库，一键添加到家庭题库，并分配给子女刷题', style: Ui.caption),
+            const SizedBox(height: 12),
+            UiButton(label: '进入题库商店', icon: Icons.storefront_rounded, onPressed: () async {
+              await Navigator.pushNamed(context, '/store');
+              _load();
+            }),
+          ])),
           const SizedBox(height: 24),
         ]),
       ),

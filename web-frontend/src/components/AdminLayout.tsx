@@ -13,6 +13,7 @@ export const MENUS = [
   { key: '/order', label: '订单与退款' },
   { key: '/reconcile', label: '对账中心' },
   { key: '/bank', label: '题库运营' },
+  { key: '/store', label: '题库商店' },
   { key: '/review', label: '审核工单' },
   { key: '/ticket', label: '客服工单' },
   { key: '/dashboard', label: '数据看板' },

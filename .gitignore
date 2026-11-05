@@ -48,3 +48,11 @@ secrets/
 Thumbs.db
 app-backend/src/main/resources/application-local.yml
 web-backend/src/main/resources/application-local.yml
+
+# 工具 / 调试临时产物（勿提交）
+.trae-html-share-packages/
+app-backend/cp.txt
+app-backend/cp_runtime.txt
+scripts/dev_screen_*.png
+scripts/ui*.xml
+web-frontend/tsconfig.tsbuildinfo

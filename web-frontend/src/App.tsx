@@ -8,6 +8,7 @@ import UserManage from './pages/user'
 import Order from './pages/order'
 import Reconcile from './pages/reconcile'
 import Bank from './pages/bank'
+import BankStore from './pages/store'
 import Review from './pages/review'
 import Ticket from './pages/ticket'
 import Dashboard from './pages/dashboard'
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/order" element={<Order />} />
           <Route path="/reconcile" element={<Reconcile />} />
           <Route path="/bank" element={<Bank />} />
+          <Route path="/store" element={<BankStore />} />
           <Route path="/review" element={<Review />} />
           <Route path="/ticket" element={<Ticket />} />
           <Route path="/dashboard" element={<Dashboard />} />

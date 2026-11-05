@@ -31,6 +31,9 @@ class Api {
   static Future<Map<String, dynamic>> put(String path, {Object? body}) async =>
       _run(http.put(Uri.parse('$kApiBase$path'), headers: _headers, body: jsonEncode(body ?? {})));
 
+  static Future<Map<String, dynamic>> delete(String path) async =>
+      _run(http.delete(Uri.parse('$kApiBase$path'), headers: _headers));
+
   static Future<Map<String, dynamic>> _run(Future<http.Response> f) async {
     http.Response r;
     try {

@@ -10,6 +10,7 @@ class ResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = (result['score'] as num?)?.toInt() ?? 0;
+    final invalidated = result['result'] == 3; // T-06 异常快答判废
     final passed = result['result'] == 1;
     final reward = (result['reward'] as Map?)?.cast<String, dynamic>() ?? {};
     final medals = (reward['newMedals'] as List?) ?? [];
@@ -27,9 +28,13 @@ class ResultPage extends StatelessWidget {
               Icon(passed ? Icons.celebration_rounded : Icons.sentiment_dissatisfied_rounded,
                   size: 76, color: passed ? Ui.success : Ui.gold),
               const SizedBox(height: 14),
-              Text('${score}分', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w700, color: Ui.ink)),
+              if (!invalidated) Text('${score}分', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w700, color: Ui.ink)),
               const SizedBox(height: 6),
-              Text(passed ? '达标！手机已解锁 🎉' : '未达标，再挑战一次吧', style: Ui.section),
+              Text(switch (result['result']) {
+                1 => '达标！手机已解锁 🎉',
+                3 => '本次作答无效：检测到异常快答，请认真作答',
+                _ => '未达标，再挑战一次吧',
+              }, style: Ui.section),
               const SizedBox(height: 20),
               if (reward.isNotEmpty) ...[
                 Container(

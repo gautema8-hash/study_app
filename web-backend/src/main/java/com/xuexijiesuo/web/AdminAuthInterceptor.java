@@ -42,6 +42,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
                 // 细粒度写权限：按路径域映射角色（权限矩阵 FR-W 模块×角色）
                 boolean allowed;
                 if (path.startsWith("/api/ops/review")) allowed = role.equals("REVIEWER") || role.equals("ADMIN");
+                else if (path.startsWith("/api/ops/store")) allowed = role.equals("REVIEWER") || role.equals("ADMIN"); // 题库商店(FR-S01~06)
                 else if (path.startsWith("/api/ops/tickets")) allowed = role.equals("CS") || role.equals("ADMIN");
                 else if (path.startsWith("/api/ops/config")) allowed = role.equals("FINANCE") || role.equals("ADMIN");
                 else allowed = role.equals("ADMIN");

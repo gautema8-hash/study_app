@@ -179,13 +179,15 @@ public class QuizController {
         Map<Long, String> analysis = new HashMap<>();
         Map<Long, String> stems = new HashMap<>();
         Map<Long, Integer> diffs = new HashMap<>();
+        Map<Long, String> optionsJson = new HashMap<>();
         for (Long qid : qids) {
-            db.sql("SELECT stem, answer, analysis, difficulty FROM question WHERE id=?").param(qid)
+            db.sql("SELECT stem, answer, analysis, difficulty, options_json FROM question WHERE id=?").param(qid)
                 .query((rs, i) -> {
                     answers.put(qid, rs.getString("answer"));
                     analysis.put(qid, rs.getString("analysis"));
                     stems.put(qid, rs.getString("stem"));
                     diffs.put(qid, rs.getInt("difficulty"));
+                    optionsJson.put(qid, rs.getString("options_json"));
                     return qid;
                 }).optional().orElseThrow(() -> bad("题目缺失:" + qid));
         }
@@ -195,7 +197,7 @@ public class QuizController {
         for (AnswerItem a : req.answers()) {
             String std = answers.get(a.questionId());
             if (std == null) continue;
-            boolean isCorrect = norm(a.answer()).equals(norm(std));
+            boolean isCorrect = matchAnswer(a.answer(), std, optionsJson.get(a.questionId()));
             int cost = a.costMs() == null ? 0 : a.costMs();
             int sw = a.switchCount() == null ? 0 : a.switchCount();
             if (isCorrect) correct++;
@@ -240,7 +242,7 @@ public class QuizController {
             List<Integer> correctDiffs = new ArrayList<>();
             for (AnswerItem a : req.answers()) {
                 String std = answers.get(a.questionId());
-                if (std != null && norm(a.answer()).equals(norm(std))) {
+                if (std != null && matchAnswer(a.answer(), std, optionsJson.get(a.questionId()))) {
                     Integer d = diffs.get(a.questionId());
                     correctDiffs.add(d == null ? 3 : d);
                 }
@@ -278,6 +280,34 @@ public class QuizController {
 
     private static String norm(String s) {
         return s == null ? "" : s.trim().toUpperCase();
+    }
+
+    /**
+     * 判分兼容：题库标准答案可能存选项字母(A~H)或选项文本，学生端提交选项文本。
+     * 先按原文比较，不等时借助 options_json 做字母↔文本双向映射。
+     */
+    private boolean matchAnswer(String student, String std, String optionsRaw) {
+        if (norm(student).equals(norm(std))) return true;
+        List<String> opts = parseOptions(optionsRaw);
+        if (opts.isEmpty()) return false;
+        if (std != null && std.trim().length() == 1) {
+            int idx = "ABCDEFGH".indexOf(std.trim().toUpperCase());
+            if (idx >= 0 && idx < opts.size() && norm(student).equals(norm(opts.get(idx)))) return true;
+        }
+        if (student != null && student.trim().length() == 1) {
+            int idx = "ABCDEFGH".indexOf(student.trim().toUpperCase());
+            if (idx >= 0 && idx < opts.size() && norm(std).equals(norm(opts.get(idx)))) return true;
+        }
+        return false;
+    }
+
+    private List<String> parseOptions(String raw) {
+        if (raw == null || raw.isBlank()) return List.of();
+        try {
+            return om.readValue(raw, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private ResponseStatusException bad(String msg) {

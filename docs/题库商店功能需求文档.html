@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>题库商店功能需求文档</title>
+<style>
+  :root {
+    --primary: #2C3B7E; --primary-soft: #EDF1FF; --gold: #C9A96A; --ink: #161C30;
+    --label: #4A5270; --muted: #8A93A8; --bg: #F4F6FB; --border: #E3E7F1;
+    --success: #2E7D5B; --error: #B3413A; --warn: #B07B2A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.75; }
+  .cover { background: linear-gradient(135deg, #1B2554, #2C3B7E); color: #fff; padding: 64px 48px; border-radius: 0 0 30px 30px; }
+  .cover h1 { font-size: 34px; letter-spacing: 1px; }
+  .cover .sub { margin-top: 12px; color: rgba(255,255,255,.75); font-size: 15px; }
+  .cover .meta { margin-top: 28px; display: flex; gap: 32px; flex-wrap: wrap; font-size: 13px; color: rgba(255,255,255,.85); }
+  .cover .meta b { display: block; color: rgba(255,255,255,.55); font-weight: 400; font-size: 12px; }
+  .gold-bar { width: 40px; height: 3px; background: var(--gold); border-radius: 2px; margin-top: 20px; }
+  main { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+  section { background: #fff; border-radius: 16px; padding: 32px 36px; margin-bottom: 24px; box-shadow: 0 8px 28px rgba(35,58,107,.07); }
+  h2 { font-size: 20px; color: var(--primary); padding-left: 12px; border-left: 4px solid var(--gold); margin-bottom: 18px; }
+  h3 { font-size: 16px; margin: 22px 0 10px; color: var(--ink); }
+  p, li { font-size: 14px; color: var(--label); }
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { background: var(--primary-soft); color: var(--primary); text-align: left; font-weight: 600; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; vertical-align: top; }
+  tr:nth-child(even) td { background: #FAFBFE; }
+  code { background: #F1F3FA; border-radius: 4px; padding: 1px 6px; font-size: 12.5px; color: var(--primary); font-family: Consolas, Menlo, monospace; }
+  pre { background: #1B2554; color: #DCE3FF; border-radius: 10px; padding: 16px 20px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; margin: 12px 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .tag { display: inline-block; border-radius: 6px; padding: 1px 8px; font-size: 12px; font-weight: 600; }
+  .t-must { background: #FCEFED; color: var(--error); } .t-should { background: #FFF6E5; color: var(--warn); }
+  .t-api { background: var(--primary-soft); color: var(--primary); }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+  .node { background: var(--primary-soft); color: var(--primary); border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 600; border: 1px solid #D6DEF8; }
+  .node.red { background: #FCEFED; color: var(--error); border-color: #F2D3D0; }
+  .node.green { background: #EAF6F0; color: var(--success); border-color: #CBE7DA; }
+  .arrow { color: var(--muted); font-size: 15px; }
+  .note { background: #FFFDF5; border: 1px solid #F0E4C0; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #7A6530; margin: 12px 0; }
+  .fr { border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin: 12px 0; }
+  .fr h4 { font-size: 14.5px; color: var(--ink); margin-bottom: 6px; }
+  .fr h4 .tag { margin-right: 8px; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>题库商店功能需求文档</h1>
+  <div class="gold-bar"></div>
+  <div class="sub">「学习解锁」项目 · Web 管理端 + 家长端 App · PRD v1.0</div>
+  <div class="meta">
+    <div><b>文档版本</b>v1.0</div>
+    <div><b>发布日期</b>2026-11-05</div>
+    <div><b>涉及端</b>web-backend / app-backend / web-frontend / app-frontend</div>
+    <div><b>状态</b>已评审待开发</div>
+  </div>
+</div>
+
+<main>
+
+<!-- ===================== 1 背景与目标 ===================== -->
+<section>
+  <h2>1. 背景与目标</h2>
+  <p>当前平台题目数据分散于「平台内置题库」与「家长自建题库」中，家长无法按需获取成体系的题目内容，运营侧也缺少对优质题目内容进行组织、包装与分发的通道。</p>
+  <h3>1.1 目标</h3>
+  <ul>
+    <li><b>运营侧</b>：提供独立 Web 管理端，支持将平台内置题目组织为「题库」（题包），经审核后上架至题库商店，并可打标签、管理上下架。</li>
+    <li><b>家长侧</b>：家长端 App 展示已上架题库，支持按需浏览、搜索、筛选，将所需题库<b>添加（下载）</b>到家庭题库，题目进入现有刷题/解锁任务链路。</li>
+    <li><b>分配管理</b>：家长可将已添加题库分配给自己的子女（student_profile），并随时收回或重新分配；确保家长与子女账号关联准确（profile 必须属于当前 family）。</li>
+    <li><b>可控上架</b>：题库内容录入 → 提交审核 → 审核通过上架的完整状态机，杜绝未审核内容到达家长端。</li>
+    <li><b>可运营</b>：商店列表展示<b>下载量</b>，支持按科目/年级/标签/关键词筛选，为运营决策提供数据。</li>
+  </ul>
+  <h3>1.2 名词约定</h3>
+  <table>
+    <tr><th>名词</th><th>定义</th></tr>
+    <tr><td>题库（题包）</td><td>一组平台内置题目（question，family_id IS NULL）组成的可上架商品，对应表 <code>bank_store_item</code></td></tr>
+    <tr><td>添加 / 下载</td><td>家长将题库加入家庭题库的动作；系统将题目<b>复制</b>为该家庭名下题目（source=2），此后随家庭题库参与出题</td></tr>
+    <tr><td>分配</td><td>家长把已添加题库授权给某个子女档案（student_profile），对应表 <code>family_bank_assign</code></td></tr>
+    <tr><td>标签</td><td>运营在后台为题库打的运营标签（如「期末冲刺」「思维训练」），家长端可用于筛选</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 2 角色与权限 ===================== -->
+<section>
+  <h2>2. 角色与权限</h2>
+  <table>
+    <tr><th>角色</th><th>端</th><th>权限</th></tr>
+    <tr><td>OPS / REVIEWER / ADMIN</td><td>Web 管理端</td><td>题库录入、编辑、提交审核；REVIEWER 与 ADMIN 可执行审核裁决与打标签；ADMIN 可上下架</td></tr>
+    <tr><td>家长（scope=parent）</td><td>家长端 App</td><td>浏览商店、搜索筛选、查看详情、添加题库、管理「我的题库」、分配/回收子女</td></tr>
+    <tr><td>子女（student_profile）</td><td>学生端</td><td>本期不开放商店入口；仅消费被分配题库内的题目（复用现有出题链路）</td></tr>
+  </table>
+  <p style="margin-top:8px">鉴权沿用现有机制：管理端走 <code>AdminAuthInterceptor</code>（admin scope JWT，写操作按角色放行）；家长端沿用 <code>TokenService.verify</code> + <code>scope=parent</code> 校验。</p>
+</section>
+
+<!-- ===================== 3 业务流程 ===================== -->
+<section>
+  <h2>3. 核心业务流程</h2>
+  <h3>3.1 题库上架状态机</h3>
+  <div class="flow">
+    <span class="node">0 草稿</span><span class="arrow">→ 提交</span>
+    <span class="node">1 待审核</span><span class="arrow">→ 审核通过</span>
+    <span class="node green">2 已上架</span><span class="arrow">→ 下架</span>
+    <span class="node">3 已下架</span><span class="arrow">→ 重新编辑提交</span>
+    <span class="node">1 待审核</span>
+  </div>
+  <div class="flow">
+    <span class="node">1 待审核</span><span class="arrow">→ 审核驳回</span>
+    <span class="node red">4 已驳回</span><span class="arrow">→ 编辑后重新提交</span>
+    <span class="node">1 待审核</span>
+  </div>
+  <ul>
+    <li>仅 <b>状态=2 已上架</b> 的题库对家长端可见；下架不影响家庭已添加内容（已复制题目不受影响）。</li>
+    <li>审核时校验：题包内题目均为内置题（source=1）、状态=1 上架、机审通过（review_status=0），且题目数 ≥ 1。</li>
+    <li>驳回必须填写驳回原因（≤200 字），展示给运营。</li>
+    <li>状态迁移全部落审计字段（reviewed_by / reviewed_at / published_at），便于追溯。</li>
+  </ul>
+  <h3>3.2 家长添加与分配流程</h3>
+  <div class="flow">
+    <span class="node">浏览商店</span><span class="arrow">→</span>
+    <span class="node">搜索/筛选</span><span class="arrow">→</span>
+    <span class="node">查看详情</span><span class="arrow">→</span>
+    <span class="node green">添加到我的题库</span><span class="arrow">→</span>
+    <span class="node">分配给子女</span>
+  </div>
+  <ul>
+    <li><b>添加（幂等）</b>：唯一键 <code>(family_id, store_item_id)</code> 防重；重复添加返回成功但不重复扣量。仅首次添加使 <code>download_count + 1</code>。</li>
+    <li><b>题目复制</b>：添加时将题包内题目复制为家庭题目（family_id=当前家庭，source=2，status=1，review_status=0），并写入映射表，保证移除时可精准回收。</li>
+    <li><b>分配（幂等）</b>：唯一键 <code>(store_item_id, profile_id)</code>；已收回的分配可重新激活。分配前强校验 profile 归属当前 family，杜绝越权分配他人子女。</li>
+    <li><b>移除</b>：家长可移除已添加题库——复制题目进入回收站（status=3），分配关系作废，商店可重新添加（重新复制）。</li>
+  </ul>
+</section>
+
+<!-- ===================== 4 功能需求 ===================== -->
+<section>
+  <h2>4. 功能需求</h2>
+
+  <h3>4.1 Web 管理端（题库商店运营）</h3>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S01 题库录入</h4>
+    <p>运营填写题库名称（≤64字，必填）、简介（≤200字）、科目、年级，并从内置题目池多选题目（1~200 题）组成题包。题目选择器支持按科目/年级/关键词筛选。保存后为「草稿」。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S02 题库编辑</h4>
+    <p>仅草稿(0)、已驳回(4)、已下架(3) 状态可编辑基础信息与题目清单；已上架(2) 不可编辑，需先下架。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S03 提交审核</h4>
+    <p>草稿/驳回/下架 → 待审核。提交时服务端复验题目清单合法性（题目存在、内置、上架、机审通过）。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S04 审核裁决（REVIEWER/ADMIN）</h4>
+    <p>待审核列表逐条裁决：通过 → 立即上架并记录 published_at；驳回 → 必填原因。审核页可预览题包内全部题目。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S05 上下架</h4>
+    <p>已上架可下架（家长端即时不可见）；已下架可重新编辑后提交审核再次上架。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S06 标签管理</h4>
+    <p>标签 CRUD（名称 ≤16 字唯一，颜色可选）；每个题库可挂 0~5 个标签；支持批量打/改标签。家长端按标签筛选。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S07 题库列表与筛选</h4>
+    <p>列表列：ID、名称、科目/年级、题量、标签、下载量、状态、审核信息、时间。筛选：状态/科目/年级/关键词（名称模糊）。分页 size≤100。</p>
+  </div>
+
+  <h3>4.2 家长端 App（题库商店）</h3>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S08 商店浏览与筛选</h4>
+    <p>展示已上架题库卡片：名称、简介、科目/年级、题量、标签、下载量；支持关键词搜索（名称/简介模糊）+ 科目/年级/标签筛选 + 分页（下拉加载）。已添加的题库显示「已添加」标识。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S09 题库详情</h4>
+    <p>展示题包全部题目（题干、选项、答案、解析），供家长添加前预览。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S10 添加题库</h4>
+    <p>一键添加：复制题目入家庭题库（幂等），首次添加下载量 +1，给出成功反馈。仅 scope=parent 可操作（FR-10 沿用）。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-must">P0</span>FR-S11 我的题库与分配管理</h4>
+    <p>「我的题库」Tab 展示已添加题库及其当前分配对象；支持勾选一个或多个子女完成分配/取消分配；子女列表实时来自 student_profile；非本家庭子女返回 403。</p>
+  </div>
+  <div class="fr"><h4><span class="tag t-should">P1</span>FR-S12 移除题库</h4>
+    <p>从我的题库移除：复制题目进入回收站、分配关系作废；下载量不回退（商店下载量为累计口径）。</p>
+  </div>
+</section>
+
+<!-- ===================== 5 数据模型 ===================== -->
+<section>
+  <h2>5. 数据模型（sql/V1.5__bank_store.sql）</h2>
+  <table>
+    <tr><th>表</th><th>用途</th><th>关键字段 / 约束</th></tr>
+    <tr><td><code>bank_store_item</code></td><td>题库（题包商品）</td><td><code>title</code>/<code>description</code>/<code>subject</code>/<code>grade</code>；<code>status</code> 0草稿 1待审核 2已上架 3已下架 4驳回；<code>question_count</code> 冗余题量；<code>download_count</code> 累计下载量；审核字段 reviewed_by/reviewed_at/review_reason；<code>uk_code</code> 业务编码唯一</td></tr>
+    <tr><td><code>bank_store_question</code></td><td>题包↔题目关联</td><td><code>uk_item_question(store_item_id, question_id)</code>；<code>sort_no</code> 排序</td></tr>
+    <tr><td><code>bank_store_tag</code></td><td>运营标签</td><td><code>uk_name</code> 名称唯一；<code>color</code> 展示色</td></tr>
+    <tr><td><code>bank_store_item_tag</code></td><td>题包↔标签</td><td><code>uk(store_item_id, tag_id)</code>；单个题包 ≤5 标签（应用层校验）</td></tr>
+    <tr><td><code>family_bank_store</code></td><td>家长添加记录</td><td><code>uk(family_id, store_item_id)</code> 幂等去重；<code>added_at</code></td></tr>
+    <tr><td><code>family_bank_store_question</code></td><td>添加时题目复制映射</td><td><code>family_bank_id</code> → 复制生成的 question_id，支撑移除回收</td></tr>
+    <tr><td><code>family_bank_assign</code></td><td>家长→子女分配</td><td><code>uk(store_item_id, profile_id)</code> 幂等；<code>status</code> 1已分配 0已收回；强校验 profile.family_id = 当前 family</td></tr>
+  </table>
+  <div class="note">兼容性说明：本期不改 <code>question</code> 表结构，题目复制复用现有字段（source=2 家长自建语义），对出题链路零侵入。</div>
+</section>
+
+<!-- ===================== 6 接口契约 ===================== -->
+<section>
+  <h2>6. 前后端接口契约</h2>
+  <p>统一响应包装 <code>{code:0, msg:"ok", data:{…}}</code>；业务失败以 HTTP 4xx + <code>msg</code> 说明（沿用现有约定）。分页参数 <code>page≥1</code>、<code>size≤100</code>；列表返回 <code>{total, page, list}</code>。</p>
+
+  <h3>6.1 管理端（web-backend，前缀 <code>/api/ops/store</code>，admin JWT）</h3>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th><th>关键参数</th></tr>
+    <tr><td>GET</td><td><code>/items</code></td><td>题库列表（FR-S07）</td><td>status/subject/grade/keyword/page/size</td></tr>
+    <tr><td>GET</td><td><code>/items/{id}</code></td><td>题库详情（含题目ID清单、标签）</td><td>—</td></tr>
+    <tr><td>POST</td><td><code>/items</code></td><td>创建草稿（FR-S01）</td><td><code>{title, description?, subject, grade, questionIds[]}</code></td></tr>
+    <tr><td>PUT</td><td><code>/items/{id}</code></td><td>编辑（FR-S02）</td><td>同上；仅 0/3/4 状态可编辑</td></tr>
+    <tr><td>POST</td><td><code>/items/{id}/submit</code></td><td>提交审核（FR-S03）</td><td>—</td></tr>
+    <tr><td>POST</td><td><code>/items/{id}/review</code></td><td>审核裁决（FR-S04）</td><td><code>{pass:boolean, reason?}</code>，驳回 reason 必填</td></tr>
+    <tr><td>POST</td><td><code>/items/{id}/offline</code></td><td>下架（FR-S05）</td><td>—</td></tr>
+    <tr><td>PUT</td><td><code>/items/{id}/tags</code></td><td>打标签（FR-S06）</td><td><code>{tagIds:number[]}</code>，≤5</td></tr>
+    <tr><td>GET</td><td><code>/tags</code></td><td>标签列表</td><td>—</td></tr>
+    <tr><td>POST</td><td><code>/tags</code></td><td>新建标签（FR-S06）</td><td><code>{name, color?}</code></td></tr>
+  </table>
+
+  <h3>6.2 家长端（app-backend，前缀 <code>/api/bank/store</code>，parent JWT）</h3>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th><th>关键参数 / 幂等</th></tr>
+    <tr><td>GET</td><td><code>/items</code></td><td>商店列表（FR-S08）</td><td>keyword/subject/grade/tagId/page/size；仅 status=2；返回 downloadCount、tags、added</td></tr>
+    <tr><td>GET</td><td><code>/items/{id}</code></td><td>题库详情（FR-S09）</td><td>含全部题目（题干/选项/答案/解析）</td></tr>
+    <tr><td>POST</td><td><code>/items/{id}/add</code></td><td>添加题库（FR-S10）</td><td>唯一键幂等：重复添加返回 <code>{added:false}</code>，下载量不重复累计</td></tr>
+    <tr><td>GET</td><td><code>/mine</code></td><td>我的题库（FR-S11）</td><td>返回已添加题库 + tags + assignedProfileIds</td></tr>
+    <tr><td>GET</td><td><code>/profiles</code></td><td>子女列表（分配用）</td><td>当前家庭 student_profile</td></tr>
+    <tr><td>POST</td><td><code>/mine/{itemId}/assign</code></td><td>分配（FR-S11）</td><td><code>{profileIds:number[]}</code>；逐个校验归属，幂等激活</td></tr>
+    <tr><td>DELETE</td><td><code>/mine/{itemId}/assign/{profileId}</code></td><td>收回分配</td><td>置 status=0</td></tr>
+    <tr><td>DELETE</td><td><code>/mine/{itemId}</code></td><td>移除（FR-S12）</td><td>题目复制进回收站、分配作废</td></tr>
+  </table>
+
+  <h3>6.3 错误模型与边界（契约承诺）</h3>
+  <table>
+    <tr><th>场景</th><th>HTTP</th><th>msg 示例</th></tr>
+    <tr><td>缺少/非法 token、scope≠parent</td><td>401 / 403</td><td>「缺少 token」「仅家长可访问」</td></tr>
+    <tr><td>参数非法（年级/科目/标签数&gt;5/题目数&gt;200 等）</td><td>400</td><td>「标签最多5个」「题目数须为1-200」</td></tr>
+    <tr><td>状态机非法迁移（如草稿直接下架）</td><td>400</td><td>「当前状态不允许该操作」</td></tr>
+    <tr><td>分配非本家庭子女</td><td>403</td><td>「子女不属于当前家庭」</td></tr>
+    <tr><td>资源不存在</td><td>400</td><td>「题库不存在或已下架」</td></tr>
+  </table>
+  <ul>
+    <li><b>幂等</b>：添加与分配均为唯一键幂等；客户端可安全重试，无重复副作用。</li>
+    <li><b>越界请求</b>：size&gt;100 截断为 100；page&lt;1 视为 1；未知筛选值按空集返回，不报错。</li>
+    <li><b>演进</b>：响应字段只增不改；后续若引入付费题库，将新增 <code>price</code>/<code>order</code> 字段与独立下单接口，不破坏现有契约。</li>
+  </ul>
+</section>
+
+<!-- ===================== 7 页面结构 ===================== -->
+<section>
+  <h2>7. 页面结构</h2>
+  <h3>7.1 Web 管理端（web-frontend，菜单「题库商店」<code>/store</code>）</h3>
+  <ul>
+    <li><b>列表区</b>：筛选（状态/科目/年级/关键词）+ Table（名称、科目/年级、题量、标签、下载量、状态、审核信息、操作）。</li>
+    <li><b>新建/编辑弹窗</b>：基础信息表单 + 题目多选器（弹窗内二级 Table：科目/年级/关键词筛选、复选、已选计数）。</li>
+    <li><b>操作列</b>：编辑、提交审核、审核（通过/驳回原因弹窗）、下架、打标签（多选弹窗）。</li>
+    <li><b>标签管理</b>：页头「新建标签」入口。</li>
+  </ul>
+  <h3>7.2 家长端 App（app-frontend，家长首页新增「题库商店」入口 → <code>/store</code>）</h3>
+  <ul>
+    <li><b>Tab 商店</b>：顶部搜索框 + 科目/年级/标签筛选 Chips；题库卡片列表（名称、简介、科目/年级/题量、标签、下载量、「添加/已添加」按钮）；下拉刷新 + 上拉分页；点卡片进详情（BottomSheet 展示题目预览）。</li>
+    <li><b>Tab 我的题库</b>：已添加题库卡片 + 当前分配对象；「分配子女」弹层（子女复选、保存）；「移除」二次确认。</li>
+  </ul>
+</section>
+
+<!-- ===================== 8 非功能 ===================== -->
+<section>
+  <h2>8. 非功能需求</h2>
+  <table>
+    <tr><th>维度</th><th>要求</th></tr>
+    <tr><td>性能</td><td>商店列表 P95 ≤ 300ms；列表查询命中 <code>idx_status(subject,grade)</code> 组合索引；下载量为列上原子自增，无行锁长事务</td></tr>
+    <tr><td>一致性</td><td>添加 = 题目复制 + 映射写入在同一事务；下载量自增在去重提交成功后执行，允许最终一致（计数口径为累计）</td></tr>
+    <tr><td>安全</td><td>家长端全量 parent scope 校验；分配强校验家庭归属；管理端写操作 RBAC（REVIEWER/ADMIN）；题目答案仅对家长下发，不进学生端离线包</td></tr>
+    <tr><td>可追溯</td><td>上架/下架/审核记录操作人与时间；后续可接入 audit_log 哈希链</td></tr>
+    <tr><td>兼容</td><td>不改 question 表结构与现有接口；所有新接口为新增资源，零破坏性变更</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 9 验收标准 ===================== -->
+<section>
+  <h2>9. 验收标准（关键用例）</h2>
+  <ol>
+    <li>运营创建题包→提交→审核通过后，家长端商店可见；驳回时家长端不可见且后台可见原因。</li>
+    <li>未上架（草稿/待审核/下架/驳回）题库在家长端任何接口均不可见、不可添加。</li>
+    <li>家长重复点击「添加」仅产生一次题目复制与一次下载量累加（幂等验证）。</li>
+    <li>添加后题目出现在家庭题库列表，可被现有解锁任务出题链路选中。</li>
+    <li>家长 A 无法给家长 B 的子女分配（403）；收回后可重新分配。</li>
+    <li>移除题库后家庭题目进入回收站，分配关系清空；可重新添加。</li>
+    <li>下载量随首次添加单调递增；筛选（科目/年级/标签/关键词）与分页边界（size&gt;100 截断）行为正确。</li>
+  </ol>
+</section>
+
+</main>
+</body>
+</html>

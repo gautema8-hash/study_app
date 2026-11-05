@@ -18,4 +18,13 @@ export const Q_STATUS: Record<number, { text: string; color: string }> = {
   2: { text: '下架', color: 'warning' },
   3: { text: '回收站', color: 'error' },
 }
+// 题库商店题包状态（FR-S 状态机）
+export const STORE_STATUS: Record<number, { text: string; color: string }> = {
+  0: { text: '草稿', color: 'default' },
+  1: { text: '待审核', color: 'processing' },
+  2: { text: '已上架', color: 'success' },
+  3: { text: '已下架', color: 'warning' },
+  4: { text: '已驳回', color: 'error' },
+}
+export const TAG_COLORS = ['blue', 'purple', 'green', 'gold', 'cyan', 'magenta', 'orange']
 export const yuan = (fen: number) => `¥${(fen / 100).toFixed(2)}`

@@ -9,6 +9,7 @@ import 'pages/student_gate.dart';
 import 'pages/quiz_page.dart';
 import 'pages/result_page.dart';
 import 'pages/reward_page.dart';
+import 'pages/bank_store_page.dart';
 
 /// 「学习解锁」客户端入口。
 /// 孩子设备（本地 childMode 标记）→ 开机/启动直达 /gate（服务端裁决三态）；
@@ -45,6 +46,7 @@ class XuexijiesuoApp extends StatelessWidget {
         '/student': (_) => const StudentHome(),
         '/gate': (_) => const StudentGate(),
         '/reward': (_) => const RewardPage(),
+        '/store': (_) => const BankStorePage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/quiz') {
