@@ -68,24 +68,43 @@ public class OpsController {
     // ---------- W5.1 用户列表（手机号脱敏，FR-W04） ----------
     @GetMapping("/users")
     public Map<String, Object> users(@RequestParam(defaultValue = "1") Integer page,
-                                     @RequestParam(defaultValue = "20") Integer size) {
-        size = Math.min(size, 100);
-        Long total = db.sql("SELECT COUNT(*) FROM family_account WHERE is_delete=0").query(Long.class).single();
+                                     @RequestParam(defaultValue = "20") Integer size,
+                                     @RequestParam(required = false) String phone,
+                                     @RequestParam(required = false) String keyword,
+                                     @RequestParam(required = false) Integer tier,
+                                     @RequestParam(required = false) Integer status) {
+        page = Math.max(page, 1); // 防御 page=0 导致 OFFSET 为负 → SQL 500
+        size = Math.min(Math.max(size, 1), 100);
+        StringBuilder where = new StringBuilder(" FROM family_account f LEFT JOIN member m ON m.family_id=f.id AND m.is_delete=0 WHERE f.is_delete=0");
+        List<Object> params = new java.util.ArrayList<>();
+        if (phone != null && !phone.isBlank()) {
+            if (!phone.trim().matches("^1\\d{10}$")) throw bad("手机号格式错误");
+            where.append(" AND f.phone_hash=?");
+            params.add(sha256(phone.trim()));
+        }
+        // 模糊搜索：手机号（明文存储）或家庭 ID
+        if (keyword != null && !keyword.isBlank()) {
+            where.append(" AND (CAST(f.phone_enc AS CHAR) LIKE ? OR CAST(f.id AS CHAR) LIKE ?)");
+            String kw = "%" + keyword.trim() + "%";
+            params.add(kw); params.add(kw);
+        }
+        if (tier != null) { where.append(" AND COALESCE(m.tier,0)=?"); params.add(tier); }
+        if (status != null) { where.append(" AND f.status=?"); params.add(status); }
+        Long total = db.sql("SELECT COUNT(*)" + where).params(params).query(Long.class).single();
         List<Map<String, Object>> list = db.sql("""
                 SELECT f.id, f.phone_enc, f.kyc_status, f.status, f.created_at,
                        COALESCE(m.tier,0) AS tier, m.expire_at,
                        (SELECT COUNT(*) FROM student_profile s WHERE s.family_id=f.id AND s.is_delete=0) AS students
-                FROM family_account f LEFT JOIN member m ON m.family_id=f.id AND m.is_delete=0
-                WHERE f.is_delete=0
-                ORDER BY f.id DESC LIMIT ? OFFSET ?
-                """).param(size).param((page - 1) * size)
+                """ + where + " ORDER BY f.id DESC LIMIT ? OFFSET ?")
+            .params(params).param(size).param((page - 1) * size)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("familyId", rs.getLong("id"));
                 byte[] enc = rs.getBytes("phone_enc");
-                String phone = enc == null ? "" : new String(enc, java.nio.charset.StandardCharsets.UTF_8);
-                m.put("phone", phone.length() >= 7 ? phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4) : "***");
+                String raw = enc == null ? "" : new String(enc, java.nio.charset.StandardCharsets.UTF_8);
+                m.put("phone", raw.length() >= 7 ? raw.substring(0, 3) + "****" + raw.substring(raw.length() - 4) : "***");
                 m.put("kyc", rs.getInt("kyc_status") == 1);
+                m.put("status", rs.getInt("status"));
                 m.put("tier", rs.getInt("tier"));
                 m.put("expireAt", rs.getString("expire_at"));
                 m.put("students", rs.getInt("students"));
@@ -98,22 +117,36 @@ public class OpsController {
     // ---------- W5.2 订单列表（全部家庭，资金台账） ----------
     @GetMapping("/orders")
     public Map<String, Object> orders(@RequestParam(defaultValue = "1") Integer page,
-                                      @RequestParam(defaultValue = "20") Integer size) {
-        size = Math.min(size, 100);
-        Long total = db.sql("SELECT COUNT(*) FROM vip_order WHERE is_delete=0").query(Long.class).single();
-        List<Map<String, Object>> list = db.sql("""
-                SELECT order_no, family_id, sku, amount, channel, status, created_at, shipped_at
-                FROM vip_order WHERE is_delete=0 ORDER BY id DESC LIMIT ? OFFSET ?
-                """).param(size).param((page - 1) * size)
+                                      @RequestParam(defaultValue = "20") Integer size,
+                                      @RequestParam(required = false) Integer status,
+                                      @RequestParam(required = false) Integer sku,
+                                      @RequestParam(required = false) String keyword) {
+        page = Math.max(page, 1);
+        size = Math.min(Math.max(size, 1), 100);
+        StringBuilder where = new StringBuilder(" WHERE is_delete=0");
+        List<Object> params = new java.util.ArrayList<>();
+        if (status != null) { where.append(" AND status=?"); params.add(status); }
+        if (sku != null) { where.append(" AND sku=?"); params.add(sku); }
+        if (keyword != null && !keyword.isBlank()) {
+            where.append(" AND (order_no LIKE ? OR CAST(family_id AS CHAR) LIKE ?)");
+            String kw = "%" + keyword.trim() + "%";
+            params.add(kw); params.add(kw);
+        }
+        Long total = db.sql("SELECT COUNT(*) FROM vip_order" + where).params(params).query(Long.class).single();
+        List<Map<String, Object>> list = db.sql("SELECT order_no, family_id, sku, amount, channel, status, created_at, shipped_at, refund_at FROM vip_order"
+                + where + " ORDER BY id DESC LIMIT ? OFFSET ?")
+            .params(params).param(size).param((page - 1) * size)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("orderNo", rs.getString("order_no"));
                 m.put("familyId", rs.getLong("family_id"));
                 m.put("sku", rs.getInt("sku"));
                 m.put("amount", rs.getInt("amount"));
+                m.put("channel", rs.getInt("channel")); // 修复：此前 SELECT 了但未返回，导致前端渠道列全空
                 m.put("status", rs.getInt("status"));
                 m.put("createdAt", rs.getString("created_at"));
                 m.put("shippedAt", rs.getString("shipped_at"));
+                m.put("refundAt", rs.getString("refund_at"));
                 return m;
             }).list();
         return ok(Map.of("total", total, "list", list));
@@ -124,12 +157,18 @@ public class OpsController {
     public Map<String, Object> questions(@RequestParam(defaultValue = "1") Integer page,
                                          @RequestParam(defaultValue = "20") Integer size,
                                          @RequestParam(required = false) Integer subject,
-                                         @RequestParam(required = false) Integer grade) {
-        size = Math.min(size, 100);
-        StringBuilder where = new StringBuilder(" WHERE is_delete=0 AND status IN (1,2)");
+                                         @RequestParam(required = false) Integer grade,
+                                         @RequestParam(required = false) Integer status,
+                                         @RequestParam(required = false) String keyword) {
+        page = Math.max(page, 1);
+        size = Math.min(Math.max(size, 1), 100);
+        StringBuilder where = new StringBuilder(" WHERE is_delete=0");
         List<Object> params = new java.util.ArrayList<>();
+        if (status != null) { where.append(" AND status=?"); params.add(status); }
+        else where.append(" AND status IN (1,2)");
         if (subject != null) { where.append(" AND subject=?"); params.add(subject); }
         if (grade != null) { where.append(" AND grade=?"); params.add(grade); }
+        if (keyword != null && !keyword.isBlank()) { where.append(" AND (stem LIKE ? OR CAST(id AS CHAR) LIKE ?)"); String kw = "%" + keyword.trim() + "%"; params.add(kw); params.add(kw); }
         Long total = db.sql("SELECT COUNT(*) FROM question" + where).params(params).query(Long.class).single();
         List<Map<String, Object>> list = db.sql("SELECT id, family_id, subject, grade, difficulty, q_type, stem, source, status, created_at FROM question"
                 + where + " ORDER BY id DESC LIMIT ? OFFSET ?")
@@ -153,6 +192,7 @@ public class OpsController {
     // ---------- W5.4 告警列表（全局） ----------
     @GetMapping("/alarms")
     public Map<String, Object> alarms(@RequestParam(defaultValue = "1") Integer page) {
+        page = Math.max(page, 1);
         List<Map<String, Object>> list = db.sql("""
                 SELECT a.id, a.family_id, a.type, a.title, a.content, a.read_flag, a.created_at
                 FROM alarm a WHERE a.is_delete=0 ORDER BY a.id DESC LIMIT 50 OFFSET ?
@@ -196,11 +236,19 @@ public class OpsController {
 
     // ---------- W6.1 审核工单（FR-W12：家长题目人工复核，REVIEWER/ADMIN 写） ----------
     @GetMapping("/review/tickets")
-    public Map<String, Object> reviewTickets(@RequestParam(defaultValue = "1") Integer status) {
+    public Map<String, Object> reviewTickets(@RequestParam(defaultValue = "1") Integer status,
+                                             @RequestParam(defaultValue = "1") Integer page,
+                                             @RequestParam(defaultValue = "20") Integer size) {
+        page = Math.max(page, 1);
+        size = Math.min(Math.max(size, 1), 100);
+        StringBuilder where = new StringBuilder(" WHERE is_delete=0");
+        List<Object> params = new java.util.ArrayList<>();
+        if (status != null && status >= 0) { where.append(" AND review_status=?"); params.add(status); }
+        Long total = db.sql("SELECT COUNT(*) FROM question" + where).params(params).query(Long.class).single();
         List<Map<String, Object>> list = db.sql("""
                 SELECT id, family_id, subject, grade, difficulty, stem, review_status, review_reason, created_at
-                FROM question WHERE is_delete=0 AND review_status=? ORDER BY id DESC LIMIT 100
-                """).param(status)
+                FROM question""" + where + " ORDER BY id DESC LIMIT ? OFFSET ?")
+            .params(params).param(size).param((page - 1) * size)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("id", rs.getLong("id"));
@@ -209,10 +257,11 @@ public class OpsController {
                 m.put("grade", rs.getInt("grade"));
                 m.put("stem", rs.getString("stem"));
                 m.put("reason", rs.getString("review_reason"));
+                m.put("reviewStatus", rs.getInt("review_status"));
                 m.put("createdAt", rs.getString("created_at"));
                 return m;
             }).list();
-        return ok(Map.of("list", list));
+        return ok(Map.of("total", total, "list", list));
     }
 
     public record ReviewDecideReq(boolean pass, String reason) {}
@@ -235,11 +284,19 @@ public class OpsController {
 
     // ---------- W6.2 客服申诉工单（FR-W15/16，CS/ADMIN 写） ----------
     @GetMapping("/tickets")
-    public Map<String, Object> tickets(@RequestParam(defaultValue = "0") Integer status) {
+    public Map<String, Object> tickets(@RequestParam(defaultValue = "0") Integer status,
+                                       @RequestParam(defaultValue = "1") Integer page,
+                                       @RequestParam(defaultValue = "20") Integer size) {
+        page = Math.max(page, 1);
+        size = Math.min(Math.max(size, 1), 100);
+        StringBuilder where = new StringBuilder(" WHERE is_delete=0");
+        List<Object> params = new java.util.ArrayList<>();
+        if (status != null && status >= 0) { where.append(" AND status=?"); params.add(status); }
+        Long total = db.sql("SELECT COUNT(*) FROM appeal_ticket" + where).params(params).query(Long.class).single();
         List<Map<String, Object>> list = db.sql("""
                 SELECT id, family_id, profile_id, task_id, type, content, status, decision, created_at
-                FROM appeal_ticket WHERE is_delete=0 AND status=? ORDER BY id DESC LIMIT 100
-                """).param(status)
+                FROM appeal_ticket""" + where + " ORDER BY id DESC LIMIT ? OFFSET ?")
+            .params(params).param(size).param((page - 1) * size)
             .query((rs, i) -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("id", rs.getLong("id"));
@@ -253,16 +310,19 @@ public class OpsController {
                 m.put("createdAt", rs.getString("created_at"));
                 return m;
             }).list();
-        return ok(Map.of("list", list));
+        return ok(Map.of("total", total, "list", list));
     }
 
     public record AppealDecideReq(boolean approve, String decision) {}
 
     @PostMapping("/tickets/{id}/decide")
     public Map<String, Object> ticketDecide(@PathVariable Long id, @RequestBody AppealDecideReq req) {
-        var ticket = db.sql("SELECT task_id FROM appeal_ticket WHERE is_delete=0 AND id=? AND status=0").param(id)
-            .query((rs, i) -> rs.getObject("task_id")).optional().orElse(null);
-        if (ticket == null) throw bad("工单不存在或已裁决");
+        // 修复：此前用可空列 task_id 判定工单是否存在，task_id 为 NULL 的工单会被误判为"不存在"而无法裁决
+        Integer exists = db.sql("SELECT COUNT(*) FROM appeal_ticket WHERE is_delete=0 AND id=? AND status=0")
+            .param(id).query(Integer.class).single();
+        if (exists == null || exists == 0) throw bad("工单不存在或已裁决");
+        Object ticket = db.sql("SELECT task_id FROM appeal_ticket WHERE id=? AND is_delete=0")
+            .param(id).query((rs, i) -> rs.getObject("task_id")).optional().orElse(null);
         jt.update("UPDATE appeal_ticket SET status=?, decision=? WHERE id=? AND is_delete=0",
             req.approve() ? 2 : 3, req.decision(), id);
         if (req.approve() && ticket instanceof Number taskIdNum) {
@@ -542,7 +602,18 @@ public class OpsController {
     }
 
     @DeleteMapping("/iam/admins/{id}")
-    public Map<String, Object> deleteAdmin(@PathVariable Long id) {
+    public Map<String, Object> deleteAdmin(@PathVariable Long id,
+                                           jakarta.servlet.http.HttpServletRequest request) {
+        // 保护 1：禁止删除当前登录账号（否则会把自己踢出系统）
+        Object self = request.getAttribute("adminId");
+        if (self instanceof Number n && n.longValue() == id) throw bad("不能删除当前登录的账号");
+        // 保护 2：禁止删除最后一个启用的超级管理员（否则后台将永久失去管理权限）
+        Integer activeAdmins = db.sql("SELECT COUNT(*) FROM admin_user WHERE is_delete=0 AND status=1 AND role='ADMIN'")
+            .query(Integer.class).single();
+        Integer targetIsAdmin = db.sql("SELECT COUNT(*) FROM admin_user WHERE id=? AND is_delete=0 AND status=1 AND role='ADMIN'")
+            .param(id).query(Integer.class).single();
+        if (activeAdmins != null && activeAdmins <= 1 && targetIsAdmin != null && targetIsAdmin > 0)
+            throw bad("不能删除最后一个启用的超级管理员");
         int n = jt.update("UPDATE admin_user SET is_delete=1 WHERE id=? AND is_delete=0", id);
         if (n == 0) throw bad("管理员不存在");
         return ok(Map.of("deleted", true));

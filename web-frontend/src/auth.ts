@@ -7,6 +7,11 @@ export function clearToken() { TOKEN = ''; localStorage.removeItem(KEY) }
 export function getToken() { return TOKEN }
 
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  // 已退出登录时直接短路，避免页面卸载前继续发出一堆 401 请求
+  if (!TOKEN) {
+    if (!window.location.hash.startsWith('#/login')) window.location.hash = '#/login'
+    throw new Error('登录已过期')
+  }
   const r = await fetch(path, {
     ...init,
     headers: {

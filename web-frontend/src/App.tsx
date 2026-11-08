@@ -1,8 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AdminLayout from './components/AdminLayout'
 import Login from './pages/login'
-
-// W1~W10 页面骨架：占位组件，后续按《Web 管理后台 PRD》逐页实现
 import Workbench from './pages/workbench'
 import UserManage from './pages/user'
 import Order from './pages/order'
@@ -14,6 +12,7 @@ import Ticket from './pages/ticket'
 import Dashboard from './pages/dashboard'
 import Setting from './pages/setting'
 import Iam from './pages/iam'
+import Audit from './pages/audit'
 
 export default function App() {
   return (
@@ -33,6 +32,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/setting" element={<Setting />} />
           <Route path="/iam" element={<Iam />} />
+          <Route path="/audit" element={<Audit />} />
         </Route>
       </Routes>
     </HashRouter>

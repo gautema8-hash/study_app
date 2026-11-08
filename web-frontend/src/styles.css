@@ -1,0 +1,29 @@
+/* 全局样式：移动端适配 + 统一空状态 + 表格容器 */
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+
+/* 表格统一放在可横向滚动容器内，避免小屏把整页撑破 */
+.ops-table-wrap { width: 100%; overflow-x: auto; }
+.ops-table-wrap .ant-table { min-width: 720px; }
+.ops-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.ops-toolbar .ant-btn, .ops-toolbar .ant-select, .ops-toolbar .ant-input-affix-wrapper { flex-shrink: 0; }
+
+/* 统一空状态 */
+.ops-empty { padding: 48px 16px; text-align: center; color: #8c8c8c; }
+.ops-empty .ops-empty-icon { font-size: 40px; line-height: 1; margin-bottom: 12px; opacity: .55; }
+.ops-empty .ops-empty-title { font-size: 15px; color: #595959; margin-bottom: 6px; }
+.ops-empty .ops-empty-desc { font-size: 13px; margin-bottom: 16px; }
+
+/* 快捷入口卡片 */
+.ops-quick-card { cursor: pointer; transition: box-shadow .2s, transform .2s; }
+.ops-quick-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.10); transform: translateY(-2px); }
+
+/* 移动端：侧栏收窄、内容区自适应，杜绝横向溢出 */
+@media (max-width: 768px) {
+  .ant-layout-sider { flex: 0 0 0 !important; max-width: 0 !important; min-width: 0 !important; width: 0 !important; overflow: hidden; }
+  .ant-layout-content { margin: 8px !important; }
+  .ant-layout-header { padding: 0 12px !important; }
+  .ant-layout-header h4 { font-size: 15px !important; }
+  .ops-toolbar { gap: 6px; }
+  .ops-table-wrap .ant-table { min-width: 640px; }
+}

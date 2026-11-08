@@ -1,38 +1,55 @@
-import { useEffect, useState, useCallback } from 'react'
-import { apiFetch } from '../../auth'
-import { Table, Tag, message, Space, Button, Popconfirm, Drawer, Descriptions, Spin } from 'antd'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { App, Table, Tag, Space, Button, Popconfirm, Drawer, Descriptions, Spin, Card, Select, Input } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { apiFetch } from '../../auth'
+import { apiRead, apiWrite } from '../../services/api'
 import { SKU_NAMES, ORDER_STATUS, CHANNEL_NAMES, yuan } from '../../components/names'
+import { EmptyState, exportCsv } from '../../components/common'
 
-// W3 订单与资金台账（查看 + 退款；订单为财务记录，不提供删除）
+// W3 订单与资金台账：搜索 / 筛选 / 导出 / 查看 / 退款（财务记录不提供删除）
 export default function Orders() {
   const [data, setData] = useState<{ total: number; list: any[] }>({ total: 0, list: [] })
   const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<number | undefined>()
+  const [sku, setSku] = useState<number | undefined>()
+  const [keyword, setKeyword] = useState('')
+
   const [view, setView] = useState<any>(null)
   const [viewLoading, setViewLoading] = useState(false)
+  const viewSeq = useRef(0)
+  const { message } = App.useApp()
 
-  const load = useCallback(async (p: number) => {
+  const load = useCallback(async (p: number, st?: number, sk?: number, kw?: string) => {
+    setLoading(true)
     try {
-      const r = await apiFetch(`/api/ops/orders?page=${p}&size=20`)
-      const j = await r.json()
-      setData(j.data)
-    } catch { message.error('后端未连接') }
-  }, [])
+      const qs = new URLSearchParams({ page: String(p), size: '20' })
+      if (st !== undefined) qs.set('status', String(st))
+      if (sk !== undefined) qs.set('sku', String(sk))
+      if (kw?.trim()) qs.set('keyword', kw.trim())
+      setData(await apiRead<{ total: number; list: any[] }>(`/api/ops/orders?${qs}`))
+    } catch (e: any) { message.error(e?.message || '订单列表加载失败') }
+    finally { setLoading(false) }
+  }, [message])
 
-  useEffect(() => { load(page) }, [page, load])
+  useEffect(() => { load(page, status, sku, keyword) }, [page, status, sku, load])
+  const reload = () => load(page, status, sku, keyword)
 
   const openView = async (orderNo: string) => {
+    const seq = ++viewSeq.current
     setViewLoading(true); setView({ orderNo })
     try {
-      const res = await apiFetch(`/api/ops/orders/${orderNo}`)
-      setView((await res.json()).data)
-    } catch { message.error('加载详情失败') }
-    finally { setViewLoading(false) }
+      const d = await apiRead<any>(`/api/ops/orders/${orderNo}`)
+      if (seq !== viewSeq.current) return
+      setView(d)
+    } catch (e: any) { if (seq === viewSeq.current) message.error(e?.message || '加载详情失败') }
+    finally { if (seq === viewSeq.current) setViewLoading(false) }
   }
 
   const refund = async (orderNo: string) => {
-    const r = await apiFetch(`/api/ops/orders/${orderNo}/refund`, { method: 'POST' })
-    if (r.ok) { message.success('退款成功'); load(page) } else message.error((await r.json()).message ?? '退款失败')
+    const r = await apiWrite(`/api/ops/orders/${orderNo}/refund`, 'POST', undefined, apiFetch)
+    if (!r.ok) { message.error(r.msg); return }
+    message.success('退款成功'); reload()
   }
 
   const cols: ColumnsType<any> = [
@@ -47,21 +64,53 @@ export default function Orders() {
       } },
     { title: '下单时间', dataIndex: 'createdAt', width: 170 },
     { title: '发货时间', dataIndex: 'shippedAt', width: 170, render: (v) => v ?? '-' },
-    { title: '操作', width: 140, render: (_, r) => (
+    { title: '操作', width: 140, fixed: 'right', render: (_, r) => (
       <Space size={4} wrap>
         <Button size="small" type="link" onClick={() => openView(r.orderNo)}>查看</Button>
-        <Popconfirm title="确认后台退款？仅已发货订单可退" onConfirm={() => refund(r.orderNo)}>
+        <Popconfirm title="确认后台退款？" description="仅已发货订单可退，操作不可撤销" onConfirm={() => refund(r.orderNo)}>
           <Button size="small" type="link" danger disabled={r.status !== 2}>退款</Button>
         </Popconfirm>
       </Space>
     ) },
   ]
+
+  const filtered = !!(keyword || status !== undefined || sku !== undefined)
+  const reset = () => { setKeyword(''); setStatus(undefined); setSku(undefined); setPage(1); load(1, undefined, undefined, '') }
+
   return (
-    <>
-      <Table
-        rowKey="orderNo" columns={cols} dataSource={data.list} size="small"
-        pagination={{ current: page, total: data.total, pageSize: 20, onChange: setPage }}
-      />
+    <Card size="small">
+      <div className="ops-toolbar">
+        <Input.Search placeholder="订单号 / 家庭ID" allowClear style={{ width: 220 }} value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onSearch={(v) => { setKeyword(v); setPage(1); load(1, status, sku, v) }} />
+        <Select placeholder="订单状态" allowClear style={{ width: 130 }} value={status}
+          options={Object.entries(ORDER_STATUS).map(([k, v]) => ({ value: Number(k), label: v.text }))}
+          onChange={(v) => { setStatus(v); setPage(1) }} />
+        <Select placeholder="套餐" allowClear style={{ width: 120 }} value={sku}
+          options={Object.entries(SKU_NAMES).map(([k, v]) => ({ value: Number(k), label: v }))}
+          onChange={(v) => { setSku(v); setPage(1) }} />
+        {filtered && <Button size="small" onClick={reset}>重置</Button>}
+        <Button size="small" onClick={reload}>刷新</Button>
+        <Button onClick={() => exportCsv('订单台账', data.list, [
+          { title: '订单号', key: 'orderNo' }, { title: '家庭ID', key: 'familyId' },
+          { title: '套餐', key: 'sku', render: (v: number) => SKU_NAMES[v] ?? v },
+          { title: '金额(元)', key: 'amount', render: (v: number) => (v / 100).toFixed(2) },
+          { title: '渠道', key: 'channel', render: (v: number) => CHANNEL_NAMES[v] ?? v },
+          { title: '状态', key: 'status', render: (v: number) => ORDER_STATUS[v]?.text ?? v },
+          { title: '下单时间', key: 'createdAt' }, { title: '发货时间', key: 'shippedAt' },
+          { title: '退款时间', key: 'refundAt' },
+        ])}>导出 CSV</Button>
+      </div>
+      <div className="ops-table-wrap">
+        <Table rowKey="orderNo" columns={cols} dataSource={data.list} loading={loading} size="small"
+          scroll={{ x: 1200 }}
+          pagination={{ current: page, total: data.total, pageSize: 20, onChange: setPage, showSizeChanger: false }}
+          locale={{ emptyText: (
+            <EmptyState title={filtered ? '没有匹配的订单' : '还没有订单'}
+              desc={filtered ? '调整筛选条件后重试' : '订单产生后会自动出现在这里'}
+              onReset={filtered ? reset : undefined} />
+          ) }} />
+      </div>
       <Drawer title={`订单详情 ${view?.orderNo ?? ''}`} open={!!view} onClose={() => setView(null)} width={560}>
         <Spin spinning={viewLoading}>
           {view && (
@@ -79,6 +128,6 @@ export default function Orders() {
           )}
         </Spin>
       </Drawer>
-    </>
+    </Card>
   )
 }
